@@ -76,6 +76,7 @@ const INFO={filing:['IRS filing status',"Your filing status decides whether we a
  margin:['Margin','Margin is money borrowed from your broker against your investments. Enter the loan balance; it is subtracted from your stock value to get your net starting portfolio.'],
  opts:['Puts and calls','A call gains value when a stock rises and a put gains when it falls. Long means you bought the option; short means you sold (wrote) it. Enter the current market price per share and we multiply by 100 shares per contract. Short positions count as a liability.'],
  limits:['Contribution limits (2026)','Maxing out uses the 2026 IRS limits: 401(k) $24,500; IRA $7,500 (Traditional and Roth combined); HSA $4,400 self-only or $8,750 family. Catch-up adds $8,000 to the 401(k) at 50+ ($11,250 at ages 60-63) and $1,100 to the IRA at 50+, plus $1,000 to the HSA at 55+. Limits are held flat in today\'s dollars.'],
+ spend:['Monthly spending','Everyday living costs such as food, utilities, insurance, travel, entertainment and shopping. Do not include mortgage or car loan payments (entered above) or child care (entered on the Children page).'],
  vol:['Volatility','Standard deviation of yearly returns. A diversified portfolio is often 10–14%. Higher values widen the range of simulated outcomes.']};
 const info=k=>k?`<button type="button" data-info="${k}" class="inline-flex items-center align-middle text-slate-400 hover:text-cyan-300 transition p-0.5 rounded-full cursor-pointer shrink-0" title="More information" aria-label="More information">${ic('info','w-4 h-4')}</button>`:'';
 const REQ=' <span class="text-rose-400">*</span>';
@@ -98,30 +99,34 @@ const PAGES=[
  ['About You','Tell us your tax filing status and birthdays.',()=>CARD(
   B(Q('What is your IRS filing status?'+REQ,`<select id="filing" class="${SEL}"><option value="">Select...</option><option value="single">Single</option><option value="mfj">Married Filing Jointly</option><option value="mfs">Married Filing Separately</option><option value="hoh">Head of Household</option></select>`,'filing')+`<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">${DT('dob','Your birthday','age-a')}<div data-if="married" class="hidden">${DT('dob2',"Spouse's birthday",'age-b')}</div></div>`)),'user'],
  ['Retirement Accounts','Tell us which accounts you hold and their current balances.',()=>acct('a','You')+acct('b','Spouse','married'),'wallet'],
- ['Income & Debts','Your income and other income, then mortgages and car loans.',()=>CARD(
+ ['Income & Debts','Your income and other income, mortgages and car loans, and monthly spending.',()=>CARD(
   B(`<label class="font-bold text-slate-200 block">What is your annual income?${REQ}</label><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${N('inc1','Your income ($/yr)',1000,'text-cyan-400')}<div data-if="married" class="hidden">${N('inc2',"Spouse's income ($/yr)",1000,'text-cyan-400')}</div></div>`+YN('o_f','Do you have other sources of income?')+LIST('o_f','oth','oth-list','Other Income')+`<div data-if="married" class="hidden space-y-3">${YN('o2_f','Does your spouse have other sources of income?')}${LIST('o2_f','oth2','oth2-list',"Spouse's Other Income")}</div>`)+
   B(YN('m_f','Do you have a mortgage?')+`<div data-if="m_f" class="hidden space-y-3 pt-1"><div id="mort-list" class="space-y-3"></div><button type="button" data-add="mort" class="px-3 py-1.5 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 rounded-lg text-xs mono font-bold transition cursor-pointer">+ Add Mortgage</button></div>`)+
-  B(YN('c_f','Do you have a car loan?')+`<div data-if="c_f" class="hidden space-y-3 pt-1"><div id="car-list" class="space-y-3"></div><button type="button" data-add="car" class="px-3 py-1.5 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 rounded-lg text-xs mono font-bold transition cursor-pointer">+ Add Car Loan</button></div>`)),'card'],
+  B(YN('c_f','Do you have a car loan?')+`<div data-if="c_f" class="hidden space-y-3 pt-1"><div id="car-list" class="space-y-3"></div><button type="button" data-add="car" class="px-3 py-1.5 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 rounded-lg text-xs mono font-bold transition cursor-pointer">+ Add Car Loan</button></div>`)+
+  B(`<label class="flex items-center gap-1 font-bold text-slate-200">What is your monthly spending after debt payments?${info('spend')}</label><p class="text-[11px] text-slate-400">Exclude mortgage and car loan payments, and exclude child care.</p><div class="sm:w-1/2">${N('spend','Monthly spending ($/month)',100,'text-emerald-400')}</div>`)),'card'],
  ['Stock Investments','Your brokerage holdings, margin, puts and calls.',()=>CARD(
   B(YN('s_f','Do you invest in stocks (taxable brokerage account)?')+`<div data-if="s_f" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">${N('s_val','Total market value of stocks ($)',1000)}</div>`)+
   B(YN('g_f','Do you use margin (borrow against your investments)?','margin')+GR('g_f',N('g_bal','Margin loan balance ($)',1000)+N('g_rate','Margin interest rate (%)',.01,'text-cyan-400'),'sm:grid-cols-3'),'s_f')+
   B(YN('p_f','Do you hold puts or calls (options)?','opts')+LIST('p_f','opt','opt-list','Option'),'s_f')),'trend'],
- ['Children','Tell us about your children, their school stage and related costs.',()=>CARD(B(YN('k_f','Do you have children?')+LIST('k_f','kids','kid-list','Child'))),'users'],
+ ['Children','Tell us about your children, their school stage and related costs.',()=>CARD(B(YN('k_f','Do you have children?')+LIST('k_f','kids','kid-list','Child')+`<div data-if="k_f" class="hidden sm:w-1/2 pt-1">${N('kspend','Monthly spending toward your children ($/month)',100,'text-emerald-400')}<p id="kspend-note" class="text-[11px] text-cyan-300 font-bold mt-1"></p></div>`)),'users'],
  ['Retirement Contributions','Do you max out your 401(k), IRA and HSA? If not, how much do you contribute each year?',()=>CONT('a','You')+CONT('b','Spouse','married'),'wallet'],
  ['Home & Equity','Your property, its estimated value, and the mortgage on it.',()=>CARD(B(YN('h_f','Do you own real estate?')+LIST('h_f','home','home-list','Property')+`<p id="home-total" data-if="h_f" class="hidden text-xs text-cyan-300 font-bold"></p><p data-if="h_f" class="hidden text-[11px] text-slate-500 leading-snug">Start typing the street address and pick a suggestion to fill in the rest and fetch an estimated value. You can also use the lookup links, and you can edit the value yourself. Online estimates are rough guides, often off by a few percent.</p>`)),'home'],
+ ['Early Retirement','Do you plan to retire before age 60?',()=>CARD(B(YN('er_f','Do you plan to retire earlier than 60?')+`<div data-if="er_f" class="hidden space-y-3 pt-1"><div class="sm:w-1/2">${N('er_age','What is your target retirement age?',1,'text-cyan-400')}</div><div class="rounded-xl border border-amber-500/40 bg-amber-950/40 p-3 text-[11px] text-amber-200 leading-relaxed space-y-1.5"><p class="font-extrabold text-amber-300">Warning: early withdrawal penalty</p><p>Withdrawals from a 401(k) or IRA before age 59&frac12; generally trigger a 10% federal penalty on top of ordinary income tax. HSA withdrawals for non-medical costs before age 65 carry a 20% penalty.</p><p>Some exceptions exist, such as the Rule of 55 (a 401(k) from the employer you leave in or after the year you turn 55), substantially equal periodic payments (72(t)), and withdrawing Roth IRA contributions (not earnings). Taxable brokerage money has no age penalty, so it often bridges the gap.</p><p id="er-note" class="font-bold text-amber-300"></p><p class="text-slate-400">This planner does not model the penalty. Talk to a tax professional before planning around it.</p></div></div>`)),'flame'],
  ['Goals & Assumptions','When you want to retire, what you will spend, and how markets behave.',()=>CARD(
   B(`<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">${N('ret','Target retirement age (you)',1,'text-cyan-400')}${N('plan','Plan through age',1,'text-cyan-400')}${N('contrib','Other annual savings outside these accounts ($)',500)}${N('raise','Savings growth above inflation (%)',.5,'text-cyan-400')}${N('exp','Retirement spending/yr, excl. debts ($)',1000)}${N('tax','Effective tax rate in retirement (%)',1,'text-cyan-400','tax')}${N('swr','Safe withdrawal rate (%)',.1,'text-cyan-400','swr')}${N('ss','Household Social Security/yr ($)',500)}${N('ssAge','Social Security start age (you)',1,'text-cyan-400','ssAge')}</div>`)+
   B(`<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${N('rPre','Return before retirement (%)',.1,'text-cyan-400')}${N('rPost','Return in retirement (%)',.1,'text-cyan-400')}${N('inf','Inflation (%)',.1,'text-cyan-400')}${N('vol','Volatility, std dev (%)',.5,'text-cyan-400','vol')}</div>`)),'target'],
  ['Your Results','FIRE number, nest egg and a 1,000-run simulation.',()=>`<div id="res" class="space-y-4"></div>`,'chart']
 ];
 
-const DEF={filing:'',dob:'',dob2:'',inc1:100000,inc2:0,m_f:'0',mort:[],o_f:'0',oth:[],o2_f:'0',oth2:[],c_f:'0',car:[],h_f:'0',home:[],a_m401k:'0',a_c401k:0,a_mira:'0',a_cira:0,a_mhsa:'0',a_chsa:0,b_m401k:'0',b_c401k:0,b_mira:'0',b_cira:0,b_mhsa:'0',b_chsa:0,a_hcov:'1',b_hcov:'1',k_f:'0',kids:[],sv:4,s_f:'0',s_val:100000,g_f:'0',g_bal:25000,g_rate:8,p_f:'0',opt:[],
+const LAST=PAGES.length;
+const DEF={filing:'',dob:'',dob2:'',inc1:100000,inc2:0,m_f:'0',mort:[],o_f:'0',oth:[],o2_f:'0',oth2:[],c_f:'0',car:[],h_f:'0',home:[],a_m401k:'0',a_c401k:0,a_mira:'0',a_cira:0,a_mhsa:'0',a_chsa:0,b_m401k:'0',b_c401k:0,b_mira:'0',b_cira:0,b_mhsa:'0',b_chsa:0,a_hcov:'1',b_hcov:'1',k_f:'0',kids:[],sv:5,spend:0,kspend:0,er_f:'0',er_age:55,s_f:'0',s_val:100000,g_f:'0',g_bal:25000,g_rate:8,p_f:'0',opt:[],
  ret:55,plan:95,contrib:30000,raise:0,exp:60000,tax:12,swr:3.5,ss:24000,ssAge:67,rPre:7,rPost:5,inf:2.5,vol:12};
 ['a','b'].forEach(p=>ACCTS.forEach(([k])=>{DEF[`${p}_${k}`]='0';DEF[`${p}_${k}_bal`]=0}));
 let S={...DEF},step=1;
-function migrate(o){let s=o.step||1,v=o.sv||1;if(v<2&&s>=5)s++;if(v<3&&s>=6)s++;if(v<4&&s>=7)s++;return s}
+function migrate(o){let s=o.step||1,v=o.sv||1;if(v<2&&s>=5)s++;if(v<3&&s>=6)s++;if(v<4&&s>=7)s++;if(v<5&&s>=8)s++;return s}
+let migrated=false;
 let hadLocal=false;
-try{const o=JSON.parse(localStorage.getItem('fire-wiz')||'null');if(o){S={...DEF,...o};if((o.sv||1)<4)S.step=migrate(o);hadLocal=true}}catch(e){}
+try{const o=JSON.parse(localStorage.getItem('fire-wiz')||'null');if(o){S={...DEF,...o};if((o.sv||1)<5){S.step=migrate(o);S.sv=5;migrated=true}hadLocal=true}}catch(e){}
 const save=()=>{try{localStorage.setItem('fire-wiz',JSON.stringify(S))}catch(e){}};
 const married=()=>S.filing==='mfj'||S.filing==='mfs';
 const ageOf=s=>{const d=new Date(s+'T00:00:00');if(!s||isNaN(d))return null;const n=new Date();let a=n.getFullYear()-d.getFullYear();if(n<new Date(n.getFullYear(),d.getMonth(),d.getDate()))a--;return a};
@@ -137,7 +142,9 @@ const LIM=(age,k,cov)=>k==='401k'?24500+(age>=60&&age<=63?11250:age>=50?8000:0):
 const contribOf=p=>{const age=ageOf(p==='a'?S.dob:S.dob2)||0;return ['401k','ira','hsa'].reduce((t,k)=>t+(S[`${p}_m${k}`]==='1'?LIM(age,k,S[`${p}_hcov`]):S[`${p}_c${k}`]),0)};
 const totalSave=()=>contribOf('a')+(married()?contribOf('b'):0)+S.contrib;
 function notes(){['a','b'].forEach(p=>{const age=ageOf(p==='a'?S.dob:S.dob2)||0;['401k','ira','hsa'].forEach(k=>{const e=$(`note-${p}_${k}`);if(e)e.textContent=`Counts as ${money(LIM(age,k,S[`${p}_hcov`]))}/yr (2026 limit${age>=50?' incl. catch-up':''})`})})}
-function vis(){document.querySelectorAll('[data-if]').forEach(e=>{const c=e.dataset.if;const n=c[0]==='!',k=n?c.slice(1):c,on=k==='married'?married():S[k]==='1';e.classList.toggle('hidden',n?on:!on)});paint();notes()}
+function dyn(){const n=$('kspend-note');if(n)n.textContent=`Part of the ${money(S.spend)}/month you entered on page 3 (which excludes child care).`;
+ const e=$('er-note'),a=S.er_age;if(e)e.textContent=a>0&&a<59.5?`Retiring at ${a} means about ${+(59.5-a).toFixed(1)} years before penalty-free access to 401(k)/IRA funds.`:''}
+function vis(){document.querySelectorAll('[data-if]').forEach(e=>{const c=e.dataset.if;const n=c[0]==='!',k=n?c.slice(1):c,on=k==='married'?married():S[k]==='1';e.classList.toggle('hidden',n?on:!on)});paint();notes();dyn()}
 function fill(){Object.keys(DEF).forEach(id=>{const e=$(id);if(e)e.value=S[id]});ages();renderLoans()}
 
 const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -258,7 +265,9 @@ document.addEventListener('click',e=>{
 
 function validate(){
  if(step===1){if(!S.filing)return 'Please select your IRS filing status.';const a=ageOf(S.dob);if(a===null||a<18||a>90)return 'Please enter your birthday (age 18–90).';if(married()){const b=ageOf(S.dob2);if(b===null||b<18||b>90)return "Please enter your spouse's birthday (age 18–90)."}}
- if(step===8){const a=ageOf(S.dob);if(S.ret<a)return `Retirement age must be at least your current age (${a}).`;if(S.plan<=S.ret)return 'Plan-through age must be greater than retirement age.';if(S.swr<=0)return 'Withdrawal rate must be above 0.'}
+ if(step===5&&S.k_f==='1'&&S.kspend>S.spend)return `Spending toward children (${money(S.kspend)}) cannot exceed your total monthly spending (${money(S.spend)}) on page 3.`;
+ if(step===LAST-2&&S.er_f==='1'){const a=ageOf(S.dob);if(S.er_age>=60)return 'Early retirement means a target age below 60.';if(S.er_age<a)return `Target retirement age must be at least your current age (${a}).`}
+ if(step===LAST-1){const a=ageOf(S.dob);if(S.ret<a)return `Retirement age must be at least your current age (${a}).`;if(S.plan<=S.ret)return 'Plan-through age must be greater than retirement age.';if(S.swr<=0)return 'Withdrawal rate must be above 0.'}
  return '';
 }
 function go(n){
@@ -267,19 +276,19 @@ function go(n){
  $('badge').innerHTML=ic(p[3])+` ${n}/${PAGES.length} - ${p[0]}`;$('title').textContent=p[0];$('sub').textContent=p[1];
  $('back').innerHTML=prev?ic('left','w-4 h-4')+' '+prev[0]:'';$('back').style.visibility=prev?'visible':'hidden';
  $('first').style.display=n===1?'none':'flex';$('next').className=`px-5 py-2.5 ${n===1?'bg-cyan-500 hover:bg-cyan-400':'bg-emerald-500 hover:bg-emerald-400'} text-slate-950 font-extrabold rounded-xl text-xs mono transition flex items-center gap-2 cursor-pointer`;
- $('next').innerHTML=(n===9?'Recalculate':n===8?'See Results':'Next: '+nx[0])+' '+ic('right','w-4 h-4');$('err').classList.add('hidden');vis();if(n===9)calc();if(n===7)renderLoans();window.scrollTo(0,0);
+ $('next').innerHTML=(n===LAST?'Recalculate':n===LAST-1?'See Results':'Next: '+nx[0])+' '+ic('right','w-4 h-4');$('err').classList.add('hidden');vis();if(n===LAST)calc();if(n===7)renderLoans();try{history.replaceState(null,'','#page'+n)}catch(e){}window.scrollTo(0,0);
 }
 function init(){
  $('logo').innerHTML=ic('flame','w-5 h-5');$('hub').innerHTML=ic('left')+' Suite Hub';$('pages').innerHTML=PAGES.map((p,i)=>`<div id="pg${i+1}" class="hidden space-y-4">${p[2]()}</div>`).join('');
- fill();vis();go(Math.min(9,Math.max(1,S.step||1)));
+ fill();vis();let st=S.step||1;const h=/^#page(\d+)$/.exec(location.hash||'');if(h&&!migrated)st=+h[1];go(Math.min(LAST,Math.max(1,st)));
 }
-$('pages').addEventListener('input',e=>{const id=e.target.id;if(!(id in DEF))return;S[id]=e.target.type==='number'?(parseFloat(e.target.value)||0):e.target.value;save();vis();ages()});
+$('pages').addEventListener('input',e=>{const id=e.target.id;if(!(id in DEF))return;S[id]=e.target.type==='number'?(parseFloat(e.target.value)||0):e.target.value;if(id==='er_age'){S.ret=S.er_age;if($('ret'))$('ret').value=S.ret}save();vis();ages()});
 document.addEventListener('click',e=>{
  const y=e.target.closest('[data-yn]');if(y){S[y.dataset.yn]=y.dataset.v;save();vis();return}
  const i=e.target.closest('[data-info]');if(i){const t=INFO[i.dataset.info];$('m-t').textContent=t[0];$('m-b').textContent=t[1];$('modal').classList.remove('hidden');$('modal').classList.add('flex');return}
  if(e.target.id==='m-x'||e.target.id==='modal'){$('modal').classList.add('hidden');$('modal').classList.remove('flex')}
 });
-$('next').addEventListener('click',()=>{const m=validate();if(m){$('err').textContent=m;$('err').classList.remove('hidden');return}step===9?calc():go(step+1)});$('back').addEventListener('click',()=>go(step-1));
+$('next').addEventListener('click',()=>{const m=validate();if(m){$('err').textContent=m;$('err').classList.remove('hidden');return}step===LAST?calc():go(step+1)});$('back').addEventListener('click',()=>go(step-1));
 $('first').addEventListener('click',()=>go(1));$('reset').addEventListener('click',()=>{S={...DEF};try{localStorage.removeItem('fire-wiz')}catch(e){}fill();go(1)});
 
 const othSum=cont=>[['o_f','oth'],['o2_f','oth2']].reduce((t,[f,l],i)=>t+((i===0||married())&&S[f]==='1'?S[l].reduce((s,m)=>s+(!cont||m.cont?m.amt:0),0):0),0);
@@ -330,7 +339,7 @@ function calc(){
  const card=(l,val,sub,c='text-white')=>`<div class="glass-card rounded-xl p-3"><p class="text-[10px] mono text-slate-400">${l}</p><p class="text-lg font-extrabold mono ${c}">${val}</p><p class="text-[10px] text-slate-500 leading-snug">${sub}</p></div>`;
  const inc=S.inc1+(married()?S.inc2:0),f={single:'Single',mfj:'Married filing jointly',mfs:'Married filing separately',hoh:'Head of household'}[S.filing];
  const sp=married()?`, spouse ${ageOf(S.dob2)}`:'';
- $('res').innerHTML=`<div class="glass-card rounded-xl p-3 text-xs text-slate-300 leading-relaxed"><b class="text-white">${f}</b>, you ${v.age}${sp}. Savings today <b class="text-sky-300">${money(v.start)}</b>; yearly savings ${money(v.contrib)} (${money(contribOf('a')+(married()?contribOf('b'):0))} in 401(k)/IRA/HSA); household income ${money(inc)}${inc?` (saving ${(v.contrib/inc*100).toFixed(0)}%)`:''}. ${S.m_f==='1'&&S.mort.length?`${S.mort.length} mortgage${S.mort.length>1?'s':''} totaling ${money(S.mort.reduce((s,m)=>s+m.bal,0))} (${money(S.mort.reduce((s,m)=>s+m.pay,0))}/mo). `:''}${S.c_f==='1'&&S.car.length?`${S.car.length} car loan${S.car.length>1?'s':''} totaling ${money(S.car.reduce((s,m)=>s+m.bal,0))} (${money(S.car.reduce((s,m)=>s+m.pay,0))}/mo). `:''}${othSum(false)?`Other income ${money(othSum(false))}/yr (${money(othSum(true))} continuing in retirement).`:''}${S.s_f==='1'?` Stock investments net ${money(stockNet())}${S.g_f==='1'?` after ${money(S.g_bal)} of margin`:''}.`:''}${kidStats().n?` ${kidStats().n} ${kidStats().n>1?'children':'child'}: child care${money(kidStats().cc)}/mo, college savings ${money(kidStats().cs)}/mo${kidStats().sup?`, providing living support to ${kidStats().sup}`:''}.`:''}${S.h_f==='1'&&S.home.length?` Home equity ${money(homeTot().v-homeTot().d)} (value ${money(homeTot().v)}, mortgage${money(homeTot().d)}).`:''}</div>
+ $('res').innerHTML=`<div class="glass-card rounded-xl p-3 text-xs text-slate-300 leading-relaxed"><b class="text-white">${f}</b>, you ${v.age}${sp}. Savings today <b class="text-sky-300">${money(v.start)}</b>; yearly savings ${money(v.contrib)} (${money(contribOf('a')+(married()?contribOf('b'):0))} in 401(k)/IRA/HSA); household income ${money(inc)}${inc?` (saving ${(v.contrib/inc*100).toFixed(0)}%)`:''}. ${S.m_f==='1'&&S.mort.length?`${S.mort.length} mortgage${S.mort.length>1?'s':''} totaling ${money(S.mort.reduce((s,m)=>s+m.bal,0))} (${money(S.mort.reduce((s,m)=>s+m.pay,0))}/mo). `:''}${S.c_f==='1'&&S.car.length?`${S.car.length} car loan${S.car.length>1?'s':''} totaling ${money(S.car.reduce((s,m)=>s+m.bal,0))} (${money(S.car.reduce((s,m)=>s+m.pay,0))}/mo). `:''}${S.spend?`Monthly spending after debts ${money(S.spend)}${S.k_f==='1'&&S.kspend?` (${money(S.kspend)} toward children)`:''}. `:''}${S.er_f==='1'?`Planning to retire early at ${S.er_age}. `:''}${othSum(false)?`Other income ${money(othSum(false))}/yr (${money(othSum(true))} continuing in retirement).`:''}${S.s_f==='1'?` Stock investments net ${money(stockNet())}${S.g_f==='1'?` after ${money(S.g_bal)} of margin`:''}.`:''}${kidStats().n?` ${kidStats().n} ${kidStats().n>1?'children':'child'}: child care${money(kidStats().cc)}/mo, college savings ${money(kidStats().cs)}/mo${kidStats().sup?`, providing living support to ${kidStats().sup}`:''}.`:''}${S.h_f==='1'&&S.home.length?` Home equity ${money(homeTot().v-homeTot().d)} (value ${money(homeTot().v)}, mortgage${money(homeTot().d)}).`:''}</div>
  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">`+
   card('Nest egg at '+v.ret,short(nest),"today's dollars, steady returns",'text-sky-300')+
   card('FIRE number',short(fire),`${money(need)}/yr incl. debts ÷ ${(v.swr*100).toFixed(1)}%`,'text-amber-300')+
