@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Retirement & FIRE Planner | Bharrys Financial Suite</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{background:#090d16;color:#f1f5f9;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.glass-panel{background:rgba(17,24,39,.75);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08)}
+.glass-card{background:rgba(15,23,42,.6);border:1px solid rgba(56,189,248,.2)}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:#0f172a}::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+input[type=date]{color-scheme:dark}
+</style>
+</head>
+<body class="min-h-full flex flex-col antialiased select-none">
+<header class="border-b border-slate-800 bg-[#090d16]/85 backdrop-blur-md sticky top-0 z-10">
+ <div class="max-w-5xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+  <div class="flex items-center gap-2.5">
+   <div id="logo" class="p-1.5 bg-slate-900 border border-slate-700/60 rounded-lg text-cyan-400"></div>
+   <div>
+    <h1 class="text-base font-extrabold text-white mono leading-none">BHARRYS <span class="text-cyan-400">FINANCIAL</span></h1>
+    <p class="text-[10px] text-slate-400 mt-0.5">Retirement &amp; FIRE Planner</p>
+   </div>
+  </div>
+  <div class="flex flex-wrap items-center gap-2 mono text-xs">
+   <button id="first" class="hidden px-3 py-1.5 rounded-xl bg-slate-900/80 text-cyan-400 border border-slate-700/80 hover:bg-slate-800 items-center gap-1.5 font-bold cursor-pointer">« Back to Page 1</button>
+   <button id="reset" class="px-3 py-1.5 rounded-xl bg-slate-900/80 text-amber-400 border border-slate-700/80 hover:bg-slate-800 font-bold cursor-pointer">Reset</button>
+   <a href="https://financialhub.bharrys.com/" target="_blank" rel="noopener" id="hub" class="px-3 py-1.5 rounded-xl bg-slate-900/80 text-slate-200 border border-slate-700/80 hover:bg-slate-800 flex items-center gap-1.5 font-bold"></a>
+  </div>
+ </div>
+</header>
+<main class="max-w-5xl w-full mx-auto px-4 py-6">
+ <section class="glass-panel rounded-2xl p-6 space-y-6">
+  <div class="border-b border-slate-800 pb-4 space-y-1">
+   <div id="badge" class="text-xs mono text-cyan-400 bg-cyan-950/60 border border-cyan-800/50 px-3 py-1 rounded-lg inline-flex items-center gap-1.5"></div>
+   <h2 id="title" class="text-xl font-extrabold text-white"></h2>
+   <p id="sub" class="text-xs text-slate-400"></p>
+  </div>
+  <div id="pages"></div>
+  <p id="err" class="hidden text-[11px] text-rose-400 font-bold mono"></p>
+  <div class="p-4 bg-slate-900/90 rounded-xl border border-cyan-500/30 flex items-center justify-between gap-3">
+   <button id="back" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl text-xs mono font-bold transition flex items-center gap-2 cursor-pointer"></button>
+   <button id="next"></button>
+  </div>
+ </section>
+</main>
+<div id="modal" class="hidden fixed inset-0 z-50 bg-black/70 items-center justify-center p-4">
+ <div class="bg-slate-900 border border-slate-700 rounded-2xl p-5 max-w-md w-full space-y-3">
+  <h3 id="m-t" class="font-extrabold text-white"></h3>
+  <p id="m-b" class="text-xs text-slate-300 leading-relaxed"></p>
+  <button id="m-x" class="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold rounded-xl text-xs mono cursor-pointer">Got it</button>
+ </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const IC={user:'<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+ wallet:'<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
+ card:'<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>',
+ target:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+ chart:'<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/>',
+ left:'<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',right:'<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+ info:'<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',trend:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',home:'<path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2-1-3-1.1-2.1-.2-4 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.2.4-2.4 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>'};
+const ic=(k,c='w-3.5 h-3.5')=>`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="${c}" aria-hidden="true">${IC[k]}</svg>`;
+const INFO={filing:['IRS filing status',"Your filing status decides whether we ask for a spouse's birthday and accounts. Choose Married if you file jointly or separately."],
+ hsa:['Health Savings Account','An HSA can pay medical costs tax-free. Its balance is counted toward your retirement portfolio.'],
+ swr:['Safe withdrawal rate','The share of your portfolio you withdraw in the first year of retirement, then adjust for inflation. 4% is the classic rule; 3.5% or lower is more cautious for a long, early retirement.'],
+ ssAge:['Social Security','Enter the combined yearly benefit for your household in today\'s dollars. It starts when you reach this age.'],
+ tax:['Effective tax rate','A flat rate applied to retirement withdrawals. Withdrawals are grossed up so your after-tax spending matches your goal.'],
+ margin:['Margin','Margin is money borrowed from your broker against your investments. Enter the loan balance; it is subtracted from your stock value to get your net starting portfolio.'],
+ opts:['Puts and calls','A call gains value when a stock rises and a put gains when it falls. Long means you bought the option; short means you sold (wrote) it. Enter the current market price per share and we multiply by 100 shares per contract. Short positions count as a liability.'],
+ limits:['Contribution limits (2026)','Maxing out uses the 2026 IRS limits: 401(k) $24,500; IRA $7,500 (Traditional and Roth combined); HSA $4,400 self-only or $8,750 family. Catch-up adds $8,000 to the 401(k) at 50+ ($11,250 at ages 60-63) and $1,100 to the IRA at 50+, plus $1,000 to the HSA at 55+. Limits are held flat in today\'s dollars.'],
+ vol:['Volatility','Standard deviation of yearly returns. A diversified portfolio is often 10–14%. Higher values widen the range of simulated outcomes.']};
+const info=k=>k?`<button type="button" data-info="${k}" class="inline-flex items-center align-middle text-slate-400 hover:text-cyan-300 transition p-0.5 rounded-full cursor-pointer shrink-0" title="More information" aria-label="More information">${ic('info','w-4 h-4')}</button>`:'';
+const REQ=' <span class="text-rose-400">*</span>';
+const INP='w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg font-extrabold outline-none focus:border-cyan-400 transition select-text ';
+const N=(id,l,st=1,col='text-emerald-400',k='')=>`<div><label class="flex items-center gap-1 text-[11px] font-bold text-slate-300 mb-1" for="${id}">${l}${info(k)}</label><input type="number" inputmode="decimal" id="${id}" step="${st}" min="0" class="${INP}${col}"></div>`;
+const DT=(id,l,age)=>`<div class="space-y-1"><label for="${id}" class="block font-bold text-slate-200">${l}${REQ}</label><input type="date" id="${id}" class="${INP}text-white font-bold"><p id="${age}" class="text-[11px] text-cyan-300 font-bold"></p></div>`;
+const Q=(label,ctl,k='')=>`<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-slate-950/80 rounded-xl border border-slate-800"><label class="flex items-center gap-1.5 font-bold text-slate-200">${label}${info(k)}</label>${ctl}</div>`;
+const YN=(id,label,k='')=>Q(label,`<div class="flex items-center gap-2 shrink-0">${[['1','Yes'],['0','No']].map(([v,t])=>`<button type="button" data-yn="${id}" data-v="${v}"><span></span> ${t}</button>`).join('')}</div>`,k);
+const B=(inner,cond)=>`<div ${cond?`data-if="${cond}"`:''} class="${cond?'hidden ':''}space-y-3 pb-4 border-b border-slate-800/80 font-mono text-xs">${inner}</div>`;
+const GR=(cond,inner,cols='sm:grid-cols-4')=>`<div data-if="${cond}" class="hidden grid grid-cols-1 ${cols} gap-3 pt-1">${inner}</div>`;
+const CARD=(inner,cond,t='')=>`<div ${cond?`data-if="${cond}"`:''} class="${cond?'hidden ':''}glass-card p-4 rounded-xl space-y-4 border-cyan-500/30 bg-slate-900/80 font-mono text-xs">${t?`<span class="font-bold text-indigo-300 uppercase tracking-wider">${t}</span>`:`<p class="text-[11px] text-slate-500 text-right"><span class="text-rose-400">*</span> Required</p>`}${inner}</div>`;
+
+const ACCTS=[['401k','401(k)'],['roth','Roth IRA'],['trad','Traditional IRA'],['hsa','HSA']];
+const acct=(p,who,cond)=>CARD(ACCTS.map(([k,l])=>`<div class="space-y-3">${YN(`${p}_${k}`,`${p==='a'?'Do you':'Does your spouse'} have ${k==='hsa'?'an':'a'}${l}?`,k==='hsa'?'hsa':'')}<div data-if="${p}_${k}" class="hidden sm:w-1/2 pl-3">${N(`${p}_${k}_bal`,`${l} current balance ($)`,1000)}</div></div>`).join(''),cond,who);
+const LIST=(flag,k,id,btn)=>`<div data-if="${flag}" class="hidden space-y-3 pt-1"><div id="${id}" class="space-y-3"></div><button type="button" data-add="${k}" class="px-3 py-1.5 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 rounded-lg text-xs mono font-bold transition cursor-pointer">+ Add ${btn}</button></div>`;
+const CONT=(p,who,cond)=>CARD([['401k','401(k)','limits'],['ira','IRA (Traditional or Roth)',''],['hsa','HSA','']].map(([k,l,i])=>`<div class="space-y-3">${YN(`${p}_m${k}`,`${p==='a'?'Do you':'Does your spouse'} max out ${p==='a'?'your':'their'}${l}?`,i)}<div data-if="${p}_m${k}" class="hidden pl-3 space-y-2">${k==='hsa'?`<div class="sm:w-1/2"><label class="block text-[11px] font-bold text-slate-300 mb-1" for="${p}_hcov">HSA coverage</label><select id="${p}_hcov" class="${SEL} w-full"><option value="1">Self-only</option><option value="2">Family</option></select></div>`:''}<p id="note-${p}_${k}" class="text-[11px] text-cyan-300 font-bold"></p></div><div data-if="!${p}_m${k}" class="hidden sm:w-1/2 pl-3">${N(`${p}_c${k}`,`How much ${p==='a'?'do you':'does your spouse'} contribute per year ($)`,500)}</div></div>`).join(''),cond,who);
+const SEL='px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-white font-bold select-text';
+
+const PAGES=[
+ ['About You','Tell us your tax filing status and birthdays.',()=>CARD(
+  B(Q('What is your IRS filing status?'+REQ,`<select id="filing" class="${SEL}"><option value="">Select...</option><option value="single">Single</option><option value="mfj">Married Filing Jointly</option><option value="mfs">Married Filing Separately</option><option value="hoh">Head of Household</option></select>`,'filing')+`<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">${DT('dob','Your birthday','age-a')}<div data-if="married" class="hidden">${DT('dob2',"Spouse's birthday",'age-b')}</div></div>`)),'user'],
+ ['Retirement Accounts','Tell us which accounts you hold and their current balances.',()=>acct('a','You')+acct('b','Spouse','married'),'wallet'],
+ ['Income & Debts','Your income and other income, then mortgages and car loans.',()=>CARD(
+  B(`<label class="font-bold text-slate-200 block">What is your annual income?${REQ}</label><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${N('inc1','Your income ($/yr)',1000,'text-cyan-400')}<div data-if="married" class="hidden">${N('inc2',"Spouse's income ($/yr)",1000,'text-cyan-400')}</div></div>`+YN('o_f','Do you have other sources of income?')+LIST('o_f','oth','oth-list','Other Income')+`<div data-if="married" class="hidden space-y-3">${YN('o2_f','Does your spouse have other sources of income?')}${LIST('o2_f','oth2','oth2-list',"Spouse's Other Income")}</div>`)+
+  B(YN('m_f','Do you have a mortgage?')+`<div data-if="m_f" class="hidden space-y-3 pt-1"><div id="mort-list" class="space-y-3"></div><button type="button" data-add="mort" class="px-3 py-1.5 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 rounded-lg text-xs mono font-bold transition cursor-pointer">+ Add Mortgage</button></div>`)+
+  B(YN('c_f','Do you have a car loan?')+`<div data-if="c_f" class="hidden space-y-3 pt-1"><div id="car-list" class="space-y-3"></div><button type="button" data-add="car" class="px-3 py-1.5 bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 rounded-lg text-xs mono font-bold transition cursor-pointer">+ Add Car Loan</button></div>`)),'card'],
+ ['Stock Investments','Your brokerage holdings, margin, puts and calls.',()=>CARD(
+  B(YN('s_f','Do you invest in stocks (taxable brokerage account)?')+`<div data-if="s_f" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">${N('s_val','Total market value of stocks ($)',1000)}</div>`)+
+  B(YN('g_f','Do you use margin (borrow against your investments)?','margin')+GR('g_f',N('g_bal','Margin loan balance ($)',1000)+N('g_rate','Margin interest rate (%)',.01,'text-cyan-400'),'sm:grid-cols-3'),'s_f')+
+  B(YN('p_f','Do you hold puts or calls (options)?','opts')+LIST('p_f','opt','opt-list','Option'),'s_f')),'trend'],
+ ['Children','Tell us about your children, their school stage and related costs.',()=>CARD(B(YN('k_f','Do you have children?')+LIST('k_f','kids','kid-list','Child'))),'users'],
+ ['Retirement Contributions','Do you max out your 401(k), IRA and HSA? If not, how much do you contribute each year?',()=>CONT('a','You')+CONT('b','Spouse','married'),'wallet'],
+ ['Home & Equity','Your property, its estimated value, and the mortgage on it.',()=>CARD(B(YN('h_f','Do you own real estate?')+LIST('h_f','home','home-list','Property')+`<p id="home-total" data-if="h_f" class="hidden text-xs text-cyan-300 font-bold"></p><p data-if="h_f" class="hidden text-[11px] text-slate-500 leading-snug">Start typing the street address and pick a suggestion to fill in the rest and fetch an estimated value. You can also use the lookup links, and you can edit the value yourself. Online estimates are rough guides, often off by a few percent.</p>`)),'home'],
+ ['Goals & Assumptions','When you want to retire, what you will spend, and how markets behave.',()=>CARD(
+  B(`<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">${N('ret','Target retirement age (you)',1,'text-cyan-400')}${N('plan','Plan through age',1,'text-cyan-400')}${N('contrib','Other annual savings outside these accounts ($)',500)}${N('raise','Savings growth above inflation (%)',.5,'text-cyan-400')}${N('exp','Retirement spending/yr, excl. debts ($)',1000)}${N('tax','Effective tax rate in retirement (%)',1,'text-cyan-400','tax')}${N('swr','Safe withdrawal rate (%)',.1,'text-cyan-400','swr')}${N('ss','Household Social Security/yr ($)',500)}${N('ssAge','Social Security start age (you)',1,'text-cyan-400','ssAge')}</div>`)+
+  B(`<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">${N('rPre','Return before retirement (%)',.1,'text-cyan-400')}${N('rPost','Return in retirement (%)',.1,'text-cyan-400')}${N('inf','Inflation (%)',.1,'text-cyan-400')}${N('vol','Volatility, std dev (%)',.5,'text-cyan-400','vol')}</div>`)),'target'],
+ ['Your Results','FIRE number, nest egg and a 1,000-run simulation.',()=>`<div id="res" class="space-y-4"></div>`,'chart']
+];
+
+const DEF={filing:'',dob:'',dob2:'',inc1:100000,inc2:0,m_f:'0',mort:[],o_f:'0',oth:[],o2_f:'0',oth2:[],c_f:'0',car:[],h_f:'0',home:[],a_m401k:'0',a_c401k:0,a_mira:'0',a_cira:0,a_mhsa:'0',a_chsa:0,b_m401k:'0',b_c401k:0,b_mira:'0',b_cira:0,b_mhsa:'0',b_chsa:0,a_hcov:'1',b_hcov:'1',k_f:'0',kids:[],sv:4,s_f:'0',s_val:100000,g_f:'0',g_bal:25000,g_rate:8,p_f:'0',opt:[],
+ ret:55,plan:95,contrib:30000,raise:0,exp:60000,tax:12,swr:3.5,ss:24000,ssAge:67,rPre:7,rPost:5,inf:2.5,vol:12};
+['a','b'].forEach(p=>ACCTS.forEach(([k])=>{DEF[`${p}_${k}`]='0';DEF[`${p}_${k}_bal`]=0}));
+let S={...DEF},step=1;
+function migrate(o){let s=o.step||1,v=o.sv||1;if(v<2&&s>=5)s++;if(v<3&&s>=6)s++;if(v<4&&s>=7)s++;return s}
+let hadLocal=false;
+try{const o=JSON.parse(localStorage.getItem('fire-wiz')||'null');if(o){S={...DEF,...o};if((o.sv||1)<4)S.step=migrate(o);hadLocal=true}}catch(e){}
+const save=()=>{try{localStorage.setItem('fire-wiz',JSON.stringify(S))}catch(e){}};
+const married=()=>S.filing==='mfj'||S.filing==='mfs';
+const ageOf=s=>{const d=new Date(s+'T00:00:00');if(!s||isNaN(d))return null;const n=new Date();let a=n.getFullYear()-d.getFullYear();if(n<new Date(n.getFullYear(),d.getMonth(),d.getDate()))a--;return a};
+const money=n=>(n<0?'-':'')+'$'+Math.round(Math.abs(n)).toLocaleString();
+const short=n=>{const a=Math.abs(n);return (n<0?'-':'')+'$'+(a>=1e6?(a/1e6).toFixed(2)+'M':a>=1e3?Math.round(a/1e3)+'K':Math.round(a))};
+
+const BTN='px-3.5 py-1.5 rounded-xl font-bold border transition flex items-center gap-1.5 cursor-pointer ';
+function paint(){document.querySelectorAll('[data-yn],[data-yk]').forEach(b=>{let on;if(b.dataset.yk){const[k,i,f]=b.dataset.yk.split(':');on=(S[k][+i]||{})[f]===+b.dataset.v}else on=S[b.dataset.yn]===b.dataset.v;const c=b.dataset.v==='1'?'emerald':'rose';
+ b.className=BTN+(on?`bg-${c}-950 border-${c}-500 text-${c}-300`:'bg-slate-900 border-slate-700 text-slate-300');
+ b.firstChild.className='w-2 h-2 rounded-full inline-block '+(on?`bg-${c}-500 shadow-sm shadow-${c}-500/50`:'bg-slate-600')})}
+function ages(){[['dob','age-a'],['dob2','age-b']].forEach(([d,e])=>{const a=ageOf(S[d]);if($(e))$(e).textContent=a===null?'':`Age: ${a} yrs old`})}
+const LIM=(age,k,cov)=>k==='401k'?24500+(age>=60&&age<=63?11250:age>=50?8000:0):k==='ira'?7500+(age>=50?1100:0):(+cov===2?8750:4400)+(age>=55?1000:0);
+const contribOf=p=>{const age=ageOf(p==='a'?S.dob:S.dob2)||0;return ['401k','ira','hsa'].reduce((t,k)=>t+(S[`${p}_m${k}`]==='1'?LIM(age,k,S[`${p}_hcov`]):S[`${p}_c${k}`]),0)};
+const totalSave=()=>contribOf('a')+(married()?contribOf('b'):0)+S.contrib;
+function notes(){['a','b'].forEach(p=>{const age=ageOf(p==='a'?S.dob:S.dob2)||0;['401k','ira','hsa'].forEach(k=>{const e=$(`note-${p}_${k}`);if(e)e.textContent=`Counts as ${money(LIM(age,k,S[`${p}_hcov`]))}/yr (2026 limit${age>=50?' incl. catch-up':''})`})})}
+function vis(){document.querySelectorAll('[data-if]').forEach(e=>{const c=e.dataset.if;const n=c[0]==='!',k=n?c.slice(1):c,on=k==='married'?married():S[k]==='1';e.classList.toggle('hidden',n?on:!on)});paint();notes()}
+function fill(){Object.keys(DEF).forEach(id=>{const e=$(id);if(e)e.value=S[id]});ages();renderLoans()}
+
+const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const yy0=()=>new Date().getFullYear();
+const GRADES=[[-2,'Not in school yet'],[-1,'Preschool / Pre-K'],[0,'Kindergarten'],...Array.from({length:12},(_,j)=>[j+1,`${j+1}${j<3?['st','nd','rd'][j]:'th'} grade`]),[21,'College - Year 1'],[22,'College - Year 2'],[23,'College - Year 3'],[24,'College - Year 4'],[25,'College - Year 5+ / graduate school'],[30,'Graduated / not in school'],[99,'Dropped out']];
+const prefillSt=a=>a<3?-2:a<5?-1:a<18?Math.min(12,a-5):a<22?a+3:30;
+const kidNeed=m=>(m.age>16&&m.st===99)||m.age>=18;
+function updKid(i){const m=S.kids[i];if(!m)return;const e=document.querySelector(`[data-k=kids][data-i="${i}"][data-f=st]`);if(e)e.value=m.st;const r=$('sup-'+i);if(r)r.classList.toggle('hidden',!kidNeed(m));paint()}
+
+/* ---- Address autocomplete (Geoapify) and Python Backend Valuation Proxy ---- */
+const CFG=Object.assign({
+  GEOAPIFY_KEY: '2a7abf498d974d969c2a74ef10deb76b',
+  VALUE_URL: 'https://datacenterless.com/real-scrapper/api/home-value'
+}, window.FIRE_CONFIG || {});
+
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ACR={};let acT=null,acSeq=0;
+function acHide(i){const b=$('ac-'+i);if(b){b.innerHTML='';b.classList.add('hidden')}}
+async function acSearch(i,q){
+ const box=$('ac-'+i);if(!box)return;
+ if(!q||q.length<4||CFG.GEOAPIFY_KEY.startsWith('YOUR_')){acHide(i);return}
+ const seq=++acSeq;
+ try{
+  const r=await fetch(`https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(q)}&filter=countrycode:us&limit=5&format=json&apiKey=${encodeURIComponent(CFG.GEOAPIFY_KEY)}`);
+  if(!r.ok)throw new Error('autocomplete '+r.status);
+  const d=await r.json();if(seq!==acSeq)return;
+  const rows=(d.results||(d.features||[]).map(f=>f.properties)).filter(x=>x&&x.formatted);
+  ACR[i]=rows;
+  box.innerHTML=rows.map((x,j)=>`<button type="button" data-ac="${i}:${j}" class="block w-full text-left px-3 py-2 text-xs text-slate-200 hover:bg-slate-800 border-b border-slate-800 last:border-0">${esc(x.formatted)}</button>`).join('');
+  box.classList.toggle('hidden',!rows.length);
+ }catch(e){acHide(i)}
+}
+function acPick(s){
+ const[i,j]=s.split(':').map(Number),x=(ACR[i]||[])[j],m=S.home[i];if(!x||!m)return;
+ m.addr=[x.housenumber,x.street].filter(Boolean).join(' ')||x.address_line1||x.name||'';
+ m.city=x.city||x.town||x.village||x.county||'';m.st=x.state_code||x.state||'';m.zip=x.postcode||'';
+ Object.entries({addr:m.addr,city:m.city,st:m.st,zip:m.zip}).forEach(([f,v])=>{const e=document.querySelector(`[data-k=home][data-i="${i}"][data-f=${f}]`);if(e)e.value=v});
+ acHide(i);updHome(i);save();fetchValue(i,x.formatted);
+}
+async function fetchValue(i,addr,force){
+ const m=S.home[i],st=$('vs-'+i);if(!m)return;
+ const full=addr||[m.addr,m.city,m.st,m.zip].filter(Boolean).join(', ');
+ if(!full){if(st)st.textContent='Enter an address first.';return}
+ const say=t=>{if(st)st.textContent=t};
+ const apply=(d,note)=>{
+  m.val=Math.round(d.price);
+  const e=document.querySelector(`[data-k=home][data-i="${i}"][data-f=val]`);if(e)e.value=m.val;
+  say(`Estimated ${money(d.price)}${d.low&&d.high?` (range ${money(d.low)} -${money(d.high)})`:''}${note||''}. You can edit the value.`);
+  updHome(i);save();
+ };
+ const ck='fire-avm:'+full.toLowerCase();
+ if(!force){try{const c=JSON.parse(localStorage.getItem(ck)||'null');if(c&&Date.now()-c.t<30*864e5){apply(c,' (saved estimate, press Get estimate to refresh)');return}}catch(e){}}
+ say('Looking up an estimate...');
+ try{
+  const r=await fetch(`${CFG.VALUE_URL}?address=${encodeURIComponent(full)}`);
+  const raw=await r.json().catch(()=>({}));
+  const d={price: raw.price || raw.estimated_value, low: raw.low || raw.priceRangeLow, high: raw.high || raw.priceRangeHigh};
+  if(!r.ok||typeof d.price!=='number'){
+   say(r.status===404?'Scraper endpoint not found.':r.status===500?'Scraper error. Enter value manually or use lookup links.':"No estimate is available for this address. Enter the value yourself or use lookup links.");
+   return;
+  }
+  try{localStorage.setItem(ck,JSON.stringify({t:Date.now(),price:d.price,low:d.low,high:d.high}))}catch(e){}
+  apply(d);
+ }catch(err){
+  say("Couldn't reach the valuation scraper service at datacenterless.com. Enter the value yourself or use lookup links.");
+ }
+}
+const homeEq=m=>{const mo=m.mi>=0&&S.m_f==='1'?S.mort[m.mi]:null,d=mo?mo.bal:0;return{val:m.val,debt:d,eq:m.val-d}};
+const homeTot=()=>S.h_f==='1'?S.home.reduce((a,m)=>{const e=homeEq(m);return{v:a.v+e.val,d:a.d+e.debt}},{v:0,d:0}):{v:0,d:0};
+function updHome(i){
+ const m=S.home[i];if(!m)return;
+ const full=[m.addr,m.city,m.st,m.zip].filter(Boolean).join(', '),q=encodeURIComponent(full),g=s=>'https://www.google.com/search?q='+encodeURIComponent(full+s);
+ const lk={z:`https://www.zillow.com/homes/${q}_rb/`,r:g(' redfin estimate'),c:g(' realtor.com home value')};
+ Object.entries(lk).forEach(([x,u])=>{const a=$(`lk-${x}-${i}`);if(a){a.href=u;a.classList.toggle('opacity-40',!full);a.classList.toggle('pointer-events-none',!full)}});
+ const e=homeEq(m),el=$('eq-'+i);
+ if(el)el.innerHTML=`Home value <b class="text-white">${money(e.val)}</b> - mortgage <b class="text-white">${money(e.debt)}</b> = equity <b class="${e.eq>=0?'text-emerald-400':'text-rose-400'}">${money(e.eq)}</b>${e.val?` <span class="text-slate-400">(${(e.debt/e.val*100).toFixed(0)}% loan-to-value)</span>`:''}`;
+ const t=$('home-total'),s=homeTot();
+ if(t)t.innerHTML=S.home.length>1?`Total across ${S.home.length} properties: value ${money(s.v)}, mortgage ${money(s.d)}, equity <b class="${s.v-s.d>=0?'text-emerald-400':'text-rose-400'}">${money(s.v-s.d)}</b>`:'';
+}
+const LOANS={mort:{list:'mort-list',n:'Mortgage',flag:'m_f',rate:1,mk:()=>({bal:250000,rate:6,pay:2000,mm:1,yy:yy0()+25})},
+ car:{list:'car-list',n:'Car Loan',flag:'c_f',rate:0,mk:()=>({bal:20000,pay:450,mm:1,yy:yy0()+4})},
+ home:{list:'home-list',n:'Property',flag:'h_f',home:1,mk:()=>({addr:'',city:'',st:'',zip:'',val:0,mi:-1})},
+ kids:{list:'kid-list',n:'Child',flag:'k_f',kid:1,mk:()=>({nm:'',age:10,st:5,man:0,cc:0,cs:0,sup:0})},
+ opt:{list:'opt-list',n:'Option Position',flag:'p_f',opt:1,mk:()=>({und:'',kind:1,pos:1,cts:1,px:2})},
+ oth:{list:'oth-list',n:'Other Income',flag:'o_f',inc:1,mk:()=>({src:'',amt:12000,cont:1})},
+ oth2:{list:'oth2-list',n:"Spouse's Other Income",flag:'o2_f',inc:1,mk:()=>({src:'',amt:12000,cont:1})}};
+const myrs=m=>{const n=new Date();return Math.max(0,(m.yy-n.getFullYear())+(m.mm-1-n.getMonth())/12)};
+function renderLoans(){
+ const lb='block text-[11px] font-bold text-slate-300 mb-1';
+ Object.entries(LOANS).forEach(([k,c])=>{
+  const L=$(c.list);if(!L)return;
+  if(S[c.flag]==='1'&&!S[k].length)S[k].push(c.mk());
+  if(c.home)S.home.forEach(m=>{if(!(S.m_f==='1'&&m.mi<S.mort.length))m.mi=-1});
+  L.innerHTML=S[k].map((m,i)=>{
+   const at=f=>`data-k="${k}" data-i="${i}" data-f="${f}"`;
+   const num=(f,l,st,col)=>`<div><label class="${lb}">${l}</label><input type="number" min="0" step="${st}" ${at(f)} value="${m[f]}" class="${INP}${col}"></div>`;
+   const txt=(f,l,ph)=>`<div><label class="${lb}">${l}</label><input type="text" autocomplete="off" ${at(f)} value="${String(m[f]||'').replace(/"/g,'&quot;')}" placeholder="${ph}" class="${INP}text-white"></div>`;
+   const sel=(f,l,opts)=>`<div><label class="${lb}">${l}</label><select ${at(f)} class="${INP}text-cyan-400">${opts.map(([x,t])=>`<option value="${x}"${+m[f]===x?' selected':''}>${t}</option>`).join('')}</select></div>`;
+   if(c.home)return `<div class="glass-card p-3 rounded-xl space-y-3 border-emerald-500/20"><div class="flex items-center justify-between"><span class="font-bold text-emerald-300">${c.n} ${i+1}</span>${S[k].length>1?`<button type="button" data-del="${k}:${i}" class="text-rose-400 hover:text-rose-300 font-bold cursor-pointer">Remove</button>`:''}</div><div class="grid grid-cols-2 sm:grid-cols-4 gap-3"><div class="col-span-2 relative">${txt('addr','Property address (start typing)','e.g. 123 Main St')}<div id="ac-${i}" class="hidden absolute z-20 left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-lg shadow-lg overflow-hidden"></div></div>${txt('city','City','')}<div class="grid grid-cols-2 gap-3">${txt('st','State','TX')}${txt('zip','Zip','75034')}</div></div><div class="flex flex-wrap items-center gap-2"><button type="button" data-fv="${i}" class="px-3 py-1.5 rounded-xl bg-emerald-950 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900 font-bold cursor-pointer">Get estimate</button><span class="text-[11px] font-bold text-slate-300">or look up:</span>${[['z','Zillow'],['r','Redfin'],['c','Realtor.com']].map(([x,t])=>`<a id="lk-${x}-${i}" href="#" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-cyan-300 hover:bg-slate-800 font-bold">${t} &#8599;</a>`).join('')}</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${num('val','Property value ($)',1000,'text-emerald-400')}${sel('mi','Mortgage on this property',[[-1,'None (no mortgage)'],...(S.m_f==='1'?S.mort:[]).map((x,j)=>[j,`Mortgage ${j+1} -${money(x.bal)} balance`])])}</div><p id="vs-${i}" class="text-[11px] text-slate-400"></p><p id="eq-${i}" class="text-xs text-cyan-300 font-bold"></p></div>`;
+   if(c.kid)return `<div class="glass-card p-3 rounded-xl space-y-3 border-emerald-500/20"><div class="flex items-center justify-between"><span class="font-bold text-emerald-300">${c.n} ${i+1}</span>${S[k].length>1?`<button type="button" data-del="${k}:${i}" class="text-rose-400 hover:text-rose-300 font-bold cursor-pointer">Remove</button>`:''}</div><div class="grid grid-cols-2 sm:grid-cols-3 gap-3">${txt('nm','Child name (optional)','e.g. Alex')}${num('age','Age',1,'text-cyan-400')}${sel('st','Current grade / college year',GRADES)}</div><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">${num('cc','Current child care expenses ($/month)',50,'text-emerald-400')}${num('cs','College savings contributions ($/month)',50,'text-emerald-400')}</div><div id="sup-${i}" class="hidden">${Q('Do you provide living support (housing, food, etc.)?',`<div class="flex items-center gap-2 shrink-0">${[['1','Yes'],['0','No']].map(([v,t])=>`<button type="button" data-yk="${k}:${i}:sup" data-v="${v}"><span></span> ${t}</button>`).join('')}</div>`)}</div></div>`;
+   return `<div class="glass-card p-3 rounded-xl space-y-3 border-emerald-500/20"><div class="flex items-center justify-between"><span class="font-bold text-emerald-300">${c.n} ${i+1}</span>${S[k].length>1?`<button type="button" data-del="${k}:${i}" class="text-rose-400 hover:text-rose-300 font-bold cursor-pointer">Remove</button>`:''}</div><div class="grid grid-cols-2 ${c.inc?'sm:grid-cols-3':c.rate||c.opt?'sm:grid-cols-5':'sm:grid-cols-4'} gap-3">${c.inc?txt('src','Source (optional)','e.g. rental, pension')+num('amt','Amount per year ($)',500,'text-emerald-400')+sel('cont','Continues in retirement?',[[1,'Yes'],[0,'No']]):c.opt?txt('und','Underlying (optional)','e.g. AAPL')+sel('kind','Type',[[1,'Call'],[0,'Put']])+sel('pos','Position',[[1,'Long (bought)'],[0,'Short (sold)']])+num('cts','Contracts',1,'text-cyan-400')+num('px','Price per share ($)',.01,'text-emerald-400'):num('bal',(k==='car'?'Loan':'Remaining')+' balance ($)',1000,'text-emerald-400')+(c.rate?num('rate','Interest rate (%)',.01,'text-cyan-400'):'')+num('pay','Monthly payment ($)',50,'text-emerald-400')+sel('mm','Maturity month',MN.map((t,j)=>[j+1,t]))+num('yy','Maturity year',1,'text-cyan-400')}</div></div>`}).join('');
+  if(c.kid)S[k].forEach((_,i)=>updKid(i));
+  if(c.home)S[k].forEach((_,i)=>updHome(i));
+ });
+ paint();
+}
+$('pages').addEventListener('input',e=>{const t=e.target,k=t.dataset.k;if(!k)return;const i=+t.dataset.i,f=t.dataset.f,m=S[k][i];m[f]=t.type==='text'?t.value:(parseFloat(t.value)||0);
+ if(k==='kids'){if(f==='st')m.man=1;if(f==='age'&&!m.man)m.st=prefillSt(m.age);updKid(i)}if(k==='home'){if(f==='addr'){clearTimeout(acT);acT=setTimeout(()=>acSearch(i,m.addr),300)}updHome(i)}save()});
+document.addEventListener('click',e=>{
+ if(e.target.closest('[data-yn="m_f"],[data-yn="c_f"],[data-yn="o_f"],[data-yn="o2_f"],[data-yn="p_f"],[data-yn="k_f"],[data-yn="h_f"]'))setTimeout(()=>{renderLoans();save()},0);
+ const ac=e.target.closest('[data-ac]');if(ac){acPick(ac.dataset.ac);return}
+ const fv=e.target.closest('[data-fv]');if(fv){fetchValue(+fv.dataset.fv,'',true);return}
+ if(!e.target.closest('[id^="ac-"]'))document.querySelectorAll('[id^="ac-"]').forEach(b=>{b.innerHTML='';b.classList.add('hidden')});
+ const yk=e.target.closest('[data-yk]');if(yk){const[k,i,f]=yk.dataset.yk.split(':');S[k][+i][f]=+yk.dataset.v;paint();save()}
+ const a=e.target.closest('[data-add]');if(a){const k=a.dataset.add;S[k].push(LOANS[k].mk());renderLoans();save()}
+ const d=e.target.closest('[data-del]');if(d){const[k,i]=d.dataset.del.split(':');S[k].splice(+i,1);renderLoans();save()}
+});
+
+function validate(){
+ if(step===1){if(!S.filing)return 'Please select your IRS filing status.';const a=ageOf(S.dob);if(a===null||a<18||a>90)return 'Please enter your birthday (age 18–90).';if(married()){const b=ageOf(S.dob2);if(b===null||b<18||b>90)return "Please enter your spouse's birthday (age 18–90)."}}
+ if(step===8){const a=ageOf(S.dob);if(S.ret<a)return `Retirement age must be at least your current age (${a}).`;if(S.plan<=S.ret)return 'Plan-through age must be greater than retirement age.';if(S.swr<=0)return 'Withdrawal rate must be above 0.'}
+ return '';
+}
+function go(n){
+ step=n;S.step=n;save();PAGES.forEach((_,i)=>$('pg'+(i+1)).classList.toggle('hidden',i+1!==n));
+ const p=PAGES[n-1],prev=PAGES[n-2],nx=PAGES[n];
+ $('badge').innerHTML=ic(p[3])+` ${n}/${PAGES.length} - ${p[0]}`;$('title').textContent=p[0];$('sub').textContent=p[1];
+ $('back').innerHTML=prev?ic('left','w-4 h-4')+' '+prev[0]:'';$('back').style.visibility=prev?'visible':'hidden';
+ $('first').style.display=n===1?'none':'flex';$('next').className=`px-5 py-2.5 ${n===1?'bg-cyan-500 hover:bg-cyan-400':'bg-emerald-500 hover:bg-emerald-400'} text-slate-950 font-extrabold rounded-xl text-xs mono transition flex items-center gap-2 cursor-pointer`;
+ $('next').innerHTML=(n===9?'Recalculate':n===8?'See Results':'Next: '+nx[0])+' '+ic('right','w-4 h-4');$('err').classList.add('hidden');vis();if(n===9)calc();if(n===7)renderLoans();window.scrollTo(0,0);
+}
+function init(){
+ $('logo').innerHTML=ic('flame','w-5 h-5');$('hub').innerHTML=ic('left')+' Suite Hub';$('pages').innerHTML=PAGES.map((p,i)=>`<div id="pg${i+1}" class="hidden space-y-4">${p[2]()}</div>`).join('');
+ fill();vis();go(Math.min(9,Math.max(1,S.step||1)));
+}
+$('pages').addEventListener('input',e=>{const id=e.target.id;if(!(id in DEF))return;S[id]=e.target.type==='number'?(parseFloat(e.target.value)||0):e.target.value;save();vis();ages()});
+document.addEventListener('click',e=>{
+ const y=e.target.closest('[data-yn]');if(y){S[y.dataset.yn]=y.dataset.v;save();vis();return}
+ const i=e.target.closest('[data-info]');if(i){const t=INFO[i.dataset.info];$('m-t').textContent=t[0];$('m-b').textContent=t[1];$('modal').classList.remove('hidden');$('modal').classList.add('flex');return}
+ if(e.target.id==='m-x'||e.target.id==='modal'){$('modal').classList.add('hidden');$('modal').classList.remove('flex')}
+});
+$('next').addEventListener('click',()=>{const m=validate();if(m){$('err').textContent=m;$('err').classList.remove('hidden');return}step===9?calc():go(step+1)});$('back').addEventListener('click',()=>go(step-1));
+$('first').addEventListener('click',()=>go(1));$('reset').addEventListener('click',()=>{S={...DEF};try{localStorage.removeItem('fire-wiz')}catch(e){}fill();go(1)});
+
+const othSum=cont=>[['o_f','oth'],['o2_f','oth2']].reduce((t,[f,l],i)=>t+((i===0||married())&&S[f]==='1'?S[l].reduce((s,m)=>s+(!cont||m.cont?m.amt:0),0):0),0);
+const kidStats=()=>{const k=S.k_f==='1'?S.kids:[];return{n:k.length,cc:k.reduce((s,m)=>s+m.cc,0),cs:k.reduce((s,m)=>s+m.cs,0),sup:k.filter(m=>kidNeed(m)&&m.sup===1).length}};
+const stockNet=()=>S.s_f==='1'?S.s_val-(S.g_f==='1'?S.g_bal:0)+(S.p_f==='1'?S.opt.reduce((t,o)=>t+(o.pos?1:-1)*o.cts*100*o.px,0):0):0;
+function vals(){
+ const p=k=>S[k]/100,age=ageOf(S.dob);
+ let start=0;['a','b'].forEach(q=>{if(q==='b'&&!married())return;ACCTS.forEach(([k])=>{if(S[`${q}_${k}`]==='1')start+=S[`${q}_${k}_bal`]})});
+ return{age,ret:Math.round(S.ret),plan:Math.round(S.plan),start:start+stockNet(),contrib:totalSave(),raise:p('raise'),exp:S.exp,tax:Math.min(p('tax'),.9),swr:p('swr'),ss:S.ss,ssAge:S.ssAge,
+  oth:othSum(true),inf:p('inf'),vol:p('vol'),
+  mort:S.m_f==='1'?S.mort.map(m=>({pay:m.pay*12,yrs:myrs(m)})):[],car:S.c_f==='1'?S.car.map(m=>({pay:m.pay*12,yrs:myrs(m)})):[],
+  rPre:(1+p('rPre'))/(1+p('inf'))-1,rPost:(1+p('rPost'))/(1+p('inf'))-1};
+}
+const debt=(v,y)=>[...v.mort,...v.car].reduce((s,m)=>s+(y<m.yrs?m.pay:0),0)/Math.pow(1+v.inf,y);
+function run(v,ret,rnd){
+ let b=v.start;const path=[];
+ for(let a=v.age;a<=v.plan;a++){
+  path.push(b);const y=a-v.age,mean=a<ret?v.rPre:v.rPost,r=rnd?Math.max(-.9,mean+v.vol*rnd()):mean;
+  if(a<ret)b=b*(1+r)+v.contrib*Math.pow(1+v.raise,y);
+  else{const w=Math.max(0,(v.exp+debt(v,y))/(1-v.tax)-(a>=v.ssAge?v.ss:0)-v.oth);b=Math.max(0,b-w)*(1+r)}
+ }
+ return path;
+}
+function rng(seed){let s=seed>>>0;const u=()=>{s=(s+0x6D2B79F5)>>>0;let t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296};return()=>Math.sqrt(-2*Math.log(u()||1e-12))*Math.cos(2*Math.PI*u())}
+
+function chart(v,ages,p10,p50,p90,det,fire){
+ const W=800,H=320,Lm=56,R=12,T=10,B=28,maxY=Math.max(...p90,...det,fire)*1.05||1;
+ const x=a=>Lm+(a-v.age)/Math.max(1,v.plan-v.age)*(W-Lm-R),y=n=>T+(1-n/maxY)*(H-T-B);
+ const pts=arr=>arr.map((n,i)=>`${x(ages[i]).toFixed(1)},${y(n).toFixed(1)}`).join(' ');
+ const band=pts(p90)+' '+ages.map((a,i)=>`${x(a).toFixed(1)},${y(p10[ages.length-1-i]).toFixed(1)}`).join(' ');
+ let g='';for(let i=0;i<=4;i++){const n=maxY*i/4;g+=`<line x1="${Lm}" x2="${W-R}" y1="${y(n)}" y2="${y(n)}" stroke="#1e293b"/><text x="${Lm-6}" y="${y(n)+3}" text-anchor="end" fill="#94a3b8" font-size="10">${short(n)}</text>`}
+ const st=Math.max(1,Math.ceil((v.plan-v.age)/8));for(let a=v.age;a<=v.plan;a+=st)g+=`<text x="${x(a)}" y="${H-8}" text-anchor="middle" fill="#94a3b8" font-size="10">${a}</text>`;
+ const rx=x(v.ret);
+ return `<svg viewBox="0 0 ${W} ${H}" class="w-full h-auto" role="img" aria-label="Projected portfolio value by age">${g}<polygon points="${band}" fill="#38bdf8" fill-opacity=".16"/><line x1="${Lm}" x2="${W-R}" y1="${y(fire)}" y2="${y(fire)}" stroke="#fbbf24" stroke-dasharray="5 4"/><line x1="${rx}" x2="${rx}" y1="${T}" y2="${H-B}" stroke="#818cf8" stroke-dasharray="2 3"/><text x="${rx+4}" y="${T+10}" fill="#a5b4fc" font-size="10">Retire ${v.ret}</text><polyline points="${pts(det)}" fill="none" stroke="#a5b4fc" stroke-width="1.5" stroke-dasharray="4 3"/><polyline points="${pts(p50)}" fill="none" stroke="#38bdf8" stroke-width="2.5"/></svg>`;
+}
+
+function calc(){
+ const v=vals(),ages=[];for(let a=v.age;a<=v.plan;a++)ages.push(a);
+ const det=run(v,v.ret),nest=det[v.ret-v.age],need=(v.exp+debt(v,v.ret-v.age))/(1-v.tax),fire=need/v.swr;
+ const Nn=1000,z=rng(20260101),runs=[];let ok=0;
+ for(let i=0;i<Nn;i++){const p=run(v,v.ret,z);runs.push(p);if(p[p.length-1]>0)ok++}
+ const pct=q=>ages.map((_,j)=>runs.map(r=>r[j]).sort((a,b)=>a-b)[Math.floor(q*Nn)]);
+ const p10=pct(.1),p50=pct(.5),p90=pct(.9);
+ let dep=null;for(let i=v.ret-v.age+1;i<det.length;i++)if(det[i]<=0){dep=ages[i];break}
+ let early=null;for(let r=v.age;r<v.plan;r++){const p=run(v,r);if(p[p.length-1]>0){early=r;break}}
+ let hit=null;const acc=run(v,v.plan+1);for(let i=0;i<acc.length;i++)if(acc[i]>=fire){hit=ages[i];break}
+ const coast=fire/Math.pow(1+v.rPre,v.ret-v.age),succ=ok/Nn*100,sc=succ>=85?'text-emerald-400':succ>=70?'text-amber-400':'text-rose-400';
+ const card=(l,val,sub,c='text-white')=>`<div class="glass-card rounded-xl p-3"><p class="text-[10px] mono text-slate-400">${l}</p><p class="text-lg font-extrabold mono ${c}">${val}</p><p class="text-[10px] text-slate-500 leading-snug">${sub}</p></div>`;
+ const inc=S.inc1+(married()?S.inc2:0),f={single:'Single',mfj:'Married filing jointly',mfs:'Married filing separately',hoh:'Head of household'}[S.filing];
+ const sp=married()?`, spouse ${ageOf(S.dob2)}`:'';
+ $('res').innerHTML=`<div class="glass-card rounded-xl p-3 text-xs text-slate-300 leading-relaxed"><b class="text-white">${f}</b>, you ${v.age}${sp}. Savings today <b class="text-sky-300">${money(v.start)}</b>; yearly savings ${money(v.contrib)} (${money(contribOf('a')+(married()?contribOf('b'):0))} in 401(k)/IRA/HSA); household income ${money(inc)}${inc?` (saving ${(v.contrib/inc*100).toFixed(0)}%)`:''}. ${S.m_f==='1'&&S.mort.length?`${S.mort.length} mortgage${S.mort.length>1?'s':''} totaling ${money(S.mort.reduce((s,m)=>s+m.bal,0))} (${money(S.mort.reduce((s,m)=>s+m.pay,0))}/mo). `:''}${S.c_f==='1'&&S.car.length?`${S.car.length} car loan${S.car.length>1?'s':''} totaling ${money(S.car.reduce((s,m)=>s+m.bal,0))} (${money(S.car.reduce((s,m)=>s+m.pay,0))}/mo). `:''}${othSum(false)?`Other income ${money(othSum(false))}/yr (${money(othSum(true))} continuing in retirement).`:''}${S.s_f==='1'?` Stock investments net ${money(stockNet())}${S.g_f==='1'?` after ${money(S.g_bal)} of margin`:''}.`:''}${kidStats().n?` ${kidStats().n} ${kidStats().n>1?'children':'child'}: child care${money(kidStats().cc)}/mo, college savings ${money(kidStats().cs)}/mo${kidStats().sup?`, providing living support to ${kidStats().sup}`:''}.`:''}${S.h_f==='1'&&S.home.length?` Home equity ${money(homeTot().v-homeTot().d)} (value ${money(homeTot().v)}, mortgage${money(homeTot().d)}).`:''}</div>
+ <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">`+
+  card('Nest egg at '+v.ret,short(nest),"today's dollars, steady returns",'text-sky-300')+
+  card('FIRE number',short(fire),`${money(need)}/yr incl. debts ÷ ${(v.swr*100).toFixed(1)}%`,'text-amber-300')+
+  card('Funded vs FIRE #',(nest/fire*100).toFixed(0)+'%',nest>=fire?'You clear the target':'Short by '+short(fire-nest),nest>=fire?'text-emerald-400':'text-rose-400')+
+  card('Monte Carlo success',succ.toFixed(0)+'%',`lasts to ${v.plan} in ${ok.toLocaleString()} of 1,000 runs`,sc)+
+  card('Earliest sustainable age',early===null?'None':early,'steady returns','text-indigo-300')+
+  card('FIRE # reached at age',hit===null?'Never':hit,'if you keep saving','text-indigo-300')+
+  card('Coast FIRE number today',short(coast),v.start>=coast?'You have already coasted':'Stop saving once you hit this',v.start>=coast?'text-emerald-400':'text-white')+
+  card('Money lasts to',dep?'Age '+dep:'Age '+v.plan+'+',dep?'steady-return depletion':'no depletion',dep?'text-rose-400':'text-emerald-400')+
+ `</div><div class="text-sm text-slate-200 glass-card rounded-xl p-3">`+(succ>=85?`<span class="text-emerald-400 font-bold">Looks resilient</span>: ${succ.toFixed(0)}% of simulations last to ${v.plan}.`:succ>=70?`<span class="text-amber-400 font-bold">Borderline</span>: ${succ.toFixed(0)}% success. Consider saving more, spending less, or retiring later.`:`<span class="text-rose-400 font-bold">At risk</span>: ${succ.toFixed(0)}% success. Try a later retirement age${early?` (steady returns support ${early})`:''}, lower spending, or higher savings.`)+`</div>
+ <div class="glass-card rounded-xl p-3"><div class="flex flex-wrap gap-x-4 gap-y-1 text-[10px] mono text-slate-400 mb-2"><span><i class="inline-block w-3 h-0.5 bg-sky-400 align-middle"></i> Median</span><span><i class="inline-block w-3 h-2 bg-sky-400/20 align-middle"></i> 10th–90th pct</span><span><i class="inline-block w-3 h-0.5 bg-indigo-300 align-middle"></i> Steady path</span><span><i class="inline-block w-3 h-0.5 bg-amber-400 align-middle"></i> FIRE number</span></div>${chart(v,ages,p10,p50,p90,det,fire)}</div>
+ <p class="text-[10px] text-slate-500 leading-snug">Educational model, not financial advice. Mortgage and car payments are fixed in nominal dollars (their real cost falls with inflation) and drop out when paid off. HSA balances count toward your portfolio. Social Security timing follows your age. Taxes are a flat effective rate. Stocks count net of any margin loan, and options at current market value (short positions as a liability); margin interest and option expirations are not modeled. Children's costs are collected for reference and do not change the projections. Home equity is shown for reference and is not counted in your portfolio.</p>`;
+}
+init();
+</script>
+</body>
+</html>
