@@ -92,11 +92,10 @@ input[type=date]{color-scheme:dark}
    <p id="shm-err" class="hidden text-[11px] text-rose-400 font-bold mono mt-1">Please enter your name to share.</p>
   </div>
   <img id="shm-img" alt="Preview of the projection image that will be shared" class="w-full h-auto rounded-xl border border-slate-700 bg-slate-950">
-  <p class="text-xs text-slate-300 mono leading-snug">Message: &ldquo;<span id="shm-msg"></span>&rdquo;</p>
   <div id="shm-links" class="grid grid-cols-2 gap-2 mono text-xs font-bold">
    <a id="sh-wa" href="#" target="_blank" rel="noopener" class="px-3 py-2.5 rounded-xl text-center bg-emerald-600 hover:bg-emerald-500 text-white">WhatsApp</a>
    <a id="sh-fb" href="#" target="_blank" rel="noopener" class="px-3 py-2.5 rounded-xl text-center bg-blue-600 hover:bg-blue-500 text-white">Facebook</a>
-   <a id="sh-x" href="#" target="_blank" rel="noopener" class="px-3 py-2.5 rounded-xl text-center bg-slate-700 hover:bg-slate-600 text-white">X (x.com)</a>
+   <a id="sh-x" href="#" target="_blank" rel="noopener" class="px-3 py-2.5 rounded-xl text-center bg-slate-700 hover:bg-slate-600 text-white">X</a>
    <a id="sh-tg" href="#" target="_blank" rel="noopener" class="px-3 py-2.5 rounded-xl text-center bg-sky-600 hover:bg-sky-500 text-white">Telegram</a>
   </div>
   <button type="button" id="shm-native" class="hidden w-full px-3 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold text-xs mono cursor-pointer">Share image + message (choose app)</button>
@@ -105,7 +104,7 @@ input[type=date]{color-scheme:dark}
    <button type="button" id="shm-ci" class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 cursor-pointer">Copy image</button>
    <button type="button" id="shm-cl" class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 hover:bg-slate-700 cursor-pointer">Copy link</button>
   </div>
-  <p class="text-[10px] text-slate-500 leading-snug">The link carries only your name and these results, not your personal inputs. Website share buttons send the message and link; to include the picture, use &ldquo;Share image + message&rdquo; on your phone, or download/copy the image and attach it in the app.</p>
+  <p class="text-[10px] text-slate-500 leading-snug">The link carries only your name and these results, not your personal inputs. On phones, the buttons open your share sheet with the picture, message and link. On a computer, the picture is copied when you click, so paste it into the message (Facebook only accepts the link; use Download image to add the picture to a post).</p>
  </div>
 </div>
 
@@ -483,6 +482,10 @@ function parseSnap(o){
 }
 async function resultsLink(name){return location.href.split('#')[0]+'#r='+await enc(snap(LASTD,name))}
 
+async function copyImg(){
+ if(!SH.blob)return false;
+ try{await navigator.clipboard.write([new ClipboardItem({'image/png':SH.blob})]);return true}catch(e){return false}
+}
 const SH={seq:0,ready:false,url:'',blob:null,name:'',t:null};
 const shOpen=()=>{$('shm').classList.remove('hidden');$('shm').classList.add('flex')};
 const shClose=()=>{$('shm').classList.add('hidden');$('shm').classList.remove('flex')};
@@ -499,14 +502,14 @@ async function refreshShare(){
  $('sh-x').href=on?`https://x.com/intent/post?text=${m}&url=${u}`:'#';
  $('sh-tg').href=on?`https://t.me/share/url?url=${u}&text=${m}`:'#';
  let nat=false;try{nat=!!(navigator.canShare&&blob&&navigator.canShare({files:[new File([blob],'p.png',{type:'image/png'})]}))}catch(e){}
- $('shm-native').classList.toggle('hidden',!nat);
+ SH.nat=nat;$('shm-native').classList.toggle('hidden',!nat);
 }
 function needName(){if(cleanName($('shm-name').value))return false;$('shm-err').classList.remove('hidden');$('shm-name').focus();return true}
 async function copyText(t){try{await navigator.clipboard.writeText(t)}catch(e){const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(_){}a.remove()}}
 $('share').addEventListener('click',()=>{
  if(!LASTD)return;
  let nm='';try{nm=localStorage.getItem('fire-name')||''}catch(e){}
- $('shm-name').value=cleanName(nm);$('shm-err').classList.add('hidden');$('shm-msg').textContent=MSG;
+ $('shm-name').value=cleanName(nm);$('shm-err').classList.add('hidden');
  shOpen();refreshShare();setTimeout(()=>$('shm-name').focus(),50);
 });
 $('shm-name').addEventListener('input',()=>{
@@ -517,7 +520,18 @@ $('shm-name').addEventListener('input',()=>{
 $('shm-links').addEventListener('click',e=>{
  if(!e.target.closest('a'))return;
  if(needName()){e.preventDefault();return}
- if(!SH.ready||!SH.url){e.preventDefault();toast('Preparing your link, tap again in a second.')}
+ if(!SH.ready||!SH.url){e.preventDefault();toast('Preparing your link, tap again in a second.');return}
+ if(SH.nat&&/Android|iPhone|iPad/i.test(navigator.userAgent)){
+  e.preventDefault();
+  navigator.share({title:'My retirement projection',text:MSG+'\n'+SH.url,files:[new File([SH.blob],'retirement-projection.png',{type:'image/png'})]}).catch(()=>{});
+  return;
+ }
+ e.preventDefault();
+ const href=e.target.closest('a').href;
+ copyImg().then(ok=>{
+  const w=window.open(href,'_blank');if(w)w.opener=null;
+  toast(!w?'Pop-up blocked. Allow pop-ups for this site and try again.':ok?'Image copied. Paste it (Ctrl/Cmd+V) into the message.':"Couldn't copy the image. Use Download image and attach it.",5000);
+ });
 });
 $('shm-x').addEventListener('click',shClose);
 $('shm').addEventListener('click',e=>{if(e.target.id==='shm')shClose()});
@@ -531,8 +545,7 @@ $('shm-dl').addEventListener('click',()=>{
  const a=document.createElement('a');a.href=URL.createObjectURL(SH.blob);a.download='retirement-projection'+(SH.name?'-'+SH.name.toLowerCase().replace(/[^a-z0-9]+/g,'-'):'')+'.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
 });
 $('shm-ci').addEventListener('click',async()=>{
- if(!SH.blob)return;
- try{await navigator.clipboard.write([new ClipboardItem({'image/png':SH.blob})]);toast('Image copied. Paste it into your chat.')}catch(e){toast("Your browser can't copy images. Use Download image instead.",3500)}
+ toast(await copyImg()?'Image copied. Paste it into your chat.':"Your browser can't copy images. Use Download image instead.",3500)
 });
 $('shm-cl').addEventListener('click',async()=>{
  if(needName()||!SH.ready||!SH.url)return;
