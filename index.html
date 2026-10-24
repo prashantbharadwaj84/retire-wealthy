@@ -161,7 +161,7 @@ const INFO={filing:['IRS filing status',"Your filing status decides whether we a
  opts:['Puts and calls','A call gains value when a stock rises and a put gains when it falls. Long means you bought the option; short means you sold (wrote) it. Enter the current market price per share and we multiply by 100 shares per contract. Short positions count as a liability.'],
  limits:['Contribution limits (2026)','Maxing out uses the 2026 IRS limits: 401(k) $24,500; IRA $7,500 (Traditional and Roth combined); HSA $4,400 self-only or $8,750 family. Catch-up adds $8,000 to the 401(k) at 50+ ($11,250 at ages 60-63) and $1,100 to the IRA at 50+, plus $1,000 to the HSA at 55+. Limits are held flat in today\'s dollars.'],
  spend:['Monthly spending','Everyday living costs such as food, utilities, insurance, travel, entertainment and shopping. Do not include mortgage or car loan payments (entered above) or child care (entered on the Children page).'],
- nest:['Nest egg','Your projected portfolio on the day you retire, in today\'s dollars, assuming steady (non-random) returns. It includes retirement accounts, stocks net of margin, and crypto, plus the savings you add until then. Home equity is not counted.'],
+ nest:['Nest egg','Your projected portfolio on the day you retire, in today\'s dollars, assuming steady (non-random) returns. It includes retirement accounts, stocks net of margin, and crypto, plus the savings you add until then. Home equity is not counted, except net proceeds from any property you plan to sell (page 8).'],
  fire:['FIRE number','The portfolio you need at retirement to fund your lifestyle. It is your yearly retirement spending plus any debt payments, grossed up for taxes, divided by your safe withdrawal rate. Social Security and other income are not subtracted, so this is a conservative target.'],
  funded:['Funded vs FIRE #','Your projected nest egg divided by your FIRE number. 100% or more means you are on track to meet the target at your retirement age; below 100% shows how much you are short.'],
  mc:['Monte Carlo success','We run 1,000 simulated futures with randomly varying yearly returns. This is the share of runs where your money lasts to age 95. Roughly 85% or higher looks resilient, 70-85% is borderline, and below 70% is at risk.'],
@@ -169,7 +169,7 @@ const INFO={filing:['IRS filing status',"Your filing status decides whether we a
  hit:['FIRE # reached at age','The age at which your portfolio, with you still saving, first grows to your FIRE number. "Never" means it does not get there by age 95.'],
  coast:['Coast FIRE number today','The amount you would need invested today so that growth alone, with no further savings, reaches your FIRE number by your retirement age. If you already have it, you could stop saving for retirement and only cover your living costs.'],
  lasts:['Money lasts to','The age at which your portfolio runs out under steady returns once you start withdrawing. "Age 95+" means it does not run out before the end of the plan.'],
- at95:['Net worth at age 95','Your projected investment portfolio at the end of the plan (age 95), in today\'s dollars, assuming steady returns. It covers retirement accounts, stocks net of margin and crypto; home equity is not counted. The median simulation figure is the middle outcome of the 1,000 random-return runs.'],
+ at95:['Net worth at age 95','Your projected investment portfolio at the end of the plan (age 95), in today\'s dollars, assuming steady returns. It covers retirement accounts, stocks net of margin and crypto; home equity is not counted unless you plan to sell it (page 8). The median simulation figure is the middle outcome of the 1,000 random-return runs.'],
  vol:['Volatility','Standard deviation of yearly returns. A diversified portfolio is often 10–14%. Higher values widen the range of simulated outcomes.']};
 const info=k=>k?`<button type="button" data-info="${k}" class="inline-flex items-center align-middle text-slate-400 hover:text-cyan-300 transition p-0.5 rounded-full cursor-pointer shrink-0" title="More information" aria-label="More information">${ic('info','w-4 h-4')}</button>`:'';
 const REQ=' <span class="text-rose-400">*</span>';
@@ -206,6 +206,7 @@ const PAGES=[
  ['Children','Tell us about your children, their school stage and related costs.',()=>CARD(B(YN('k_f','Do you have children?')+LIST('k_f','kids','kid-list','Child')+`<div data-if="k_f" class="hidden sm:w-1/2 pt-1">${N('kspend','Monthly spending toward your children ($/month)',100,'text-emerald-400')}<p id="kspend-note" class="text-[11px] text-cyan-300 font-bold mt-1"></p></div>`)),'users'],
  ['Retirement Contributions','Do you max out your 401(k), IRA and HSA? If not, how much do you contribute each year?',()=>CONT('a','You')+CONT('b','Spouse','married'),'wallet'],
  ['Home & Equity','Your property, its estimated value, and the mortgage on it.',()=>CARD(B(YN('h_f','Do you own real estate?')+LIST('h_f','home','home-list','Property')+`<p id="home-total" data-if="h_f" class="hidden text-xs text-cyan-300 font-bold"></p><p data-if="h_f" class="hidden text-[11px] text-slate-500 leading-snug">Start typing the street address and pick a suggestion to fill in the rest and fetch an estimated value. You can also use the lookup links, and you can edit the value yourself. Online estimates are rough guides, often off by a few percent.</p>`)),'home'],
+ ['Property Sale Plans','Do you plan to sell any of your properties? When, and what would you net?',()=>CARD(B(`<p data-if="!h_f" class="hidden text-xs text-slate-400">You said you don't own real estate on the previous page, so there is nothing to enter here. Press Next to continue.</p><div data-if="h_f" class="hidden space-y-3"><div id="liq-list" class="space-y-3"></div><p id="liq-total" class="text-xs text-cyan-300 font-bold"></p><p class="text-[11px] text-slate-500 leading-snug">Assumes each property's value grows 3% a year. The mortgage payoff comes from the loan's balance, rate and payment on page 3, and its payments stop when you sell. Net proceeds (value minus payoff) are added to your investment portfolio in the year of sale and counted in your retirement projection, shown in today's dollars. Selling costs and taxes on the gain are not deducted.</p></div>`),'','Plans to sell'),'home'],
  ['Early Retirement','Do you plan to retire before age 60?',()=>CARD(B(YN('er_f','Do you plan to retire earlier than 60?')+`<div data-if="er_f" class="hidden space-y-3 pt-1"><div class="sm:w-1/2">${N('er_age','What is your target retirement age?',1,'text-cyan-400')}</div><div class="rounded-xl border border-amber-500/40 bg-amber-950/40 p-3 text-[11px] text-amber-200 leading-relaxed space-y-1.5"><p class="font-extrabold text-amber-300">Warning: early withdrawal penalty</p><p>Withdrawals from a 401(k) or IRA before age 59&frac12; generally trigger a 10% federal penalty on top of ordinary income tax. HSA withdrawals for non-medical costs before age 65 carry a 20% penalty.</p><p>Some exceptions exist, such as the Rule of 55 (a 401(k) from the employer you leave in or after the year you turn 55), substantially equal periodic payments (72(t)), and withdrawing Roth IRA contributions (not earnings). Taxable brokerage money has no age penalty, so it often bridges the gap.</p><p id="er-note" class="font-bold text-amber-300"></p><p class="text-slate-400">This planner does not model the penalty. Talk to a tax professional before planning around it.</p></div></div>`)),'flame'],
  ['Goals & Assumptions','When you want to retire, your lifestyle, and key assumptions.',()=>CARD(
   B(Q('How would you describe your lifestyle in retirement?'+REQ,`<select id="life" class="${SEL}"><option value="minimalist">Minimalist</option><option value="moderate">Moderate</option><option value="luxurious">Luxurious</option></select>`)+`<p id="life-note" class="text-[11px] text-cyan-300 font-bold"></p>`)+
@@ -215,15 +216,15 @@ const PAGES=[
 
 const LAST=PAGES.length;
 const LIFE={minimalist:40000,moderate:75000,luxurious:100000};
-const DEF={filing:'',dob:'',dob2:'',inc1:100000,inc2:0,m_f:'0',mort:[],o_f:'0',oth:[],o2_f:'0',oth2:[],c_f:'0',car:[],h_f:'0',home:[],a_m401k:'0',a_c401k:0,a_mira:'0',a_cira:0,a_mhsa:'0',a_chsa:0,b_m401k:'0',b_c401k:0,b_mira:'0',b_cira:0,b_mhsa:'0',b_chsa:0,a_hcov:'1',b_hcov:'1',k_f:'0',kids:[],sv:5,life:'moderate',s_inv:0,cr_f:'0',cr_val:0,spend:0,kspend:0,er_f:'0',er_age:55,s_f:'0',s_val:100000,g_f:'0',g_bal:25000,g_rate:8,p_f:'0',opt:[],
+const DEF={filing:'',dob:'',dob2:'',inc1:100000,inc2:0,m_f:'0',mort:[],o_f:'0',oth:[],o2_f:'0',oth2:[],c_f:'0',car:[],h_f:'0',home:[],a_m401k:'0',a_c401k:0,a_mira:'0',a_cira:0,a_mhsa:'0',a_chsa:0,b_m401k:'0',b_c401k:0,b_mira:'0',b_cira:0,b_mhsa:'0',b_chsa:0,a_hcov:'1',b_hcov:'1',k_f:'0',kids:[],sv:6,life:'moderate',s_inv:0,cr_f:'0',cr_val:0,spend:0,kspend:0,er_f:'0',er_age:55,s_f:'0',s_val:100000,g_f:'0',g_bal:25000,g_rate:8,p_f:'0',opt:[],
  ret:60,plan:95,contrib:30000,raise:0,exp:75000,tax:12,swr:3.5,ss:24000,ssAge:67,rPre:10,rPost:5,inf:3,vol:12};
 ['a','b'].forEach(p=>ACCTS.forEach(([k])=>{DEF[`${p}_${k}`]='0';DEF[`${p}_${k}_bal`]=0}));
 const clone=o=>JSON.parse(JSON.stringify(o));
 let S=clone(DEF),step=1;
-function migrate(o){let s=o.step||1,v=o.sv||1;if(v<2&&s>=5)s++;if(v<3&&s>=6)s++;if(v<4&&s>=7)s++;if(v<5&&s>=8)s++;return s}
+function migrate(o){let s=o.step||1,v=o.sv||1;if(v<2&&s>=5)s++;if(v<3&&s>=6)s++;if(v<4&&s>=7)s++;if(v<5&&s>=8)s++;if(v<6&&s>=8)s++;return s}
 let migrated=false;
 let hadLocal=false;
-try{const o=JSON.parse(localStorage.getItem('fire-wiz')||'null');if(o){S={...clone(DEF),...o};if((o.sv||1)<5){S.step=migrate(o);S.sv=5;migrated=true}hadLocal=true}}catch(e){}
+try{const o=JSON.parse(localStorage.getItem('fire-wiz')||'null');if(o){S={...clone(DEF),...o};if((o.sv||1)<6){S.step=migrate(o);S.sv=6;migrated=true}hadLocal=true}}catch(e){}
 const norm=()=>{S.plan=95;S.rPre=10;S.rPost=5;S.inf=3;if(!LIFE[S.life])S.life='moderate';S.exp=LIFE[S.life]};norm();
 const save=()=>{try{localStorage.setItem('fire-wiz',JSON.stringify(S))}catch(e){}};
 const married=()=>S.filing==='mfj'||S.filing==='mfs';
@@ -324,9 +325,36 @@ function updHome(i){
  const t=$('home-total'),s=homeTot();
  if(t)t.innerHTML=S.home.length>1?`Total across ${S.home.length} properties: value ${money(s.v)}, mortgage ${money(s.d)}, equity <b class="${s.v-s.d>=0?'text-emerald-400':'text-rose-400'}">${money(s.v-s.d)}</b>`:'';
 }
+const HG=.03;
+const liqN=m=>(m.ly-new Date().getFullYear())*12+(m.lm-1-new Date().getMonth());
+const mortBal=(mo,n)=>{if(!mo)return 0;if(n<=0)return mo.bal;if(n>=Math.round(myrs(mo)*12))return 0;const r=(mo.rate||0)/1200,g=Math.pow(1+r,n);return Math.max(0,r?mo.bal*g-mo.pay*(g-1)/r:mo.bal-mo.pay*n)};
+function liq(m){const n=liqN(m),mo=S.m_f==='1'&&m.mi>=0?S.mort[m.mi]:null,t=Math.max(0,n)/12,vs=m.val*Math.pow(1+HG,t),pay=mortBal(mo,Math.max(0,n)),eq=vs-pay;return{n,t,past:n<0,vs,pay,eq,mo,real:eq/Math.pow(1+S.inf/100,t)}}
+const saleList=age=>S.h_f==='1'?S.home.filter(m=>m.lq===1).map(m=>liq(m)).filter(L=>!L.past&&Math.round(L.n/12)<=Math.round(S.plan)-(age||0)).map(L=>({y:Math.round(L.n/12),amt:L.real})):[];
+const mortEnd=(j,yrs)=>S.h_f==='1'?S.home.reduce((y,m)=>{if(m.lq===1&&m.mi===j){const L=liq(m);if(!L.past)return Math.min(y,L.t)}return y},yrs):yrs;
+function liqTotal(){const t=$('liq-total');if(!t)return;const a=S.h_f==='1'?S.home.filter(m=>m.lq===1).map(m=>liq(m)).filter(L=>!L.past):[];t.innerHTML=a.length?`Planned sales: ${a.length} ${a.length>1?'properties':'property'}, net proceeds <b class="${a.reduce((x,L)=>x+L.eq,0)>=0?'text-emerald-400':'text-rose-400'}">${money(a.reduce((x,L)=>x+L.eq,0))}</b> at the sale dates (about <b class="text-white">${money(a.reduce((x,L)=>x+L.real,0))}</b> in today's dollars)`:''}
+function updLiq(i){
+ const m=S.home[i],el=$('lq-'+i);if(!m||!el||m.lq!==1)return;
+ const L=liq(m),row=(l,v,c='text-white')=>`<div class="flex items-baseline justify-between gap-3"><span class="text-slate-300">${l}</span><b class="${c} text-right">${v}</b></div>`;
+ if(L.past)el.innerHTML='<span class="text-rose-400 font-bold">That date has already passed. Choose this month or later.</span>';
+ else{
+  const mo=L.mo,pn=mo?(L.n>=Math.round(myrs(mo)*12)?`Mortgage ${m.mi+1} is paid off by then`:`Mortgage ${m.mi+1}, ${money(mo.bal)} owed today`):'No mortgage on this property';
+  el.innerHTML=row('Value today',money(m.val))+row(`Value in ${MN[m.lm-1]} ${m.ly}`,money(L.vs))+(L.pay>0?row(`Mortgage payoff at sale <span class="text-[10px] text-slate-500">(${pn})</span>`,money(L.pay),'text-amber-300'):'')+`<div class="border-t border-slate-800 pt-1.5">${row('Equity at sale',money(L.eq),L.eq>=0?'text-emerald-400':'text-rose-400')}</div>`+`<p class="text-[11px] text-cyan-300 font-bold pt-1">${L.eq>=0?`Adds about ${money(L.real)} (today's dollars) to your portfolio in ${m.ly}.`:`Sale price would not cover the mortgage; you would need to bring ${money(-L.eq)} to closing (about ${money(-L.real)} in today's dollars).`}</p>`}
+ liqTotal();
+}
+function renderLiq(){
+ const L=$('liq-list');if(!L)return;
+ const lb='block text-[11px] font-bold text-slate-300 mb-1',now=new Date();
+ S.home.forEach(m=>{if(m.lq===undefined)m.lq=0;if(!m.lm)m.lm=now.getMonth()+1;if(!m.ly)m.ly=yy0()+5});
+ L.innerHTML=S.home.map((m,i)=>{
+  const nm=[m.addr,m.city].filter(Boolean).join(', ')||'Property '+(i+1),at=f=>`data-k="home" data-i="${i}" data-f="${f}"`;
+  return `<div class="glass-card p-3 rounded-xl space-y-3 border-emerald-500/20"><span class="font-bold text-emerald-300">${esc(nm)}</span>`+
+  Q('Do you plan to liquidate (sell) this property?',`<div class="flex items-center gap-2 shrink-0">${[['1','Yes'],['0','No']].map(([v,t])=>`<button type="button" data-yk="home:${i}:lq" data-v="${v}"><span></span> ${t}</button>`).join('')}</div>`)+
+  (m.lq===1?`<div class="grid grid-cols-2 gap-3 sm:w-1/2"><div><label class="${lb}">Sale month</label><select ${at('lm')} class="${INP}text-cyan-400">${MN.map((t,j)=>`<option value="${j+1}"${m.lm===j+1?' selected':''}>${t}</option>`).join('')}</select></div><div><label class="${lb}">Sale year</label><input type="number" min="${now.getFullYear()}" step="1" ${at('ly')} value="${m.ly}" class="${INP}text-cyan-400"></div></div><div id="lq-${i}" class="space-y-1.5 rounded-xl bg-slate-950/80 border border-slate-800 p-3"></div>`:'')+`</div>`}).join('');
+ S.home.forEach((_,i)=>updLiq(i));liqTotal();
+}
 const LOANS={mort:{list:'mort-list',n:'Mortgage',flag:'m_f',rate:1,mk:()=>({bal:250000,rate:6,pay:2000,mm:1,yy:yy0()+25})},
  car:{list:'car-list',n:'Car Loan',flag:'c_f',rate:0,mk:()=>({bal:20000,pay:450,mm:1,yy:yy0()+4})},
- home:{list:'home-list',n:'Property',flag:'h_f',home:1,mk:()=>({addr:'',city:'',st:'',zip:'',val:0,mi:-1})},
+ home:{list:'home-list',n:'Property',flag:'h_f',home:1,mk:()=>({addr:'',city:'',st:'',zip:'',val:0,mi:-1,lq:0,lm:new Date().getMonth()+1,ly:yy0()+5})},
  kids:{list:'kid-list',n:'Child',flag:'k_f',kid:1,mk:()=>({nm:'',age:10,st:5,man:0,cc:0,cs:0,sup:0})},
  opt:{list:'opt-list',n:'Option Position',flag:'p_f',opt:1,mk:()=>({und:'',kind:1,pos:1,cts:1,px:2})},
  oth:{list:'oth-list',n:'Other Income',flag:'o_f',inc:1,mk:()=>({src:'',amt:12000,cont:1})},
@@ -349,16 +377,16 @@ function renderLoans(){
   if(c.kid)S[k].forEach((_,i)=>updKid(i));
   if(c.home)S[k].forEach((_,i)=>updHome(i));
  });
- paint();
+ renderLiq();paint();
 }
 $('pages').addEventListener('input',e=>{const t=e.target,k=t.dataset.k;if(!k)return;const i=+t.dataset.i,f=t.dataset.f,m=S[k][i];m[f]=t.type==='text'?t.value:(parseFloat(t.value)||0);
- if(k==='kids'){if(f==='st')m.man=1;if(f==='age'&&!m.man)m.st=prefillSt(m.age);updKid(i)}if(k==='home'){if(f==='addr'){clearTimeout(acT);acT=setTimeout(()=>acSearch(i,m.addr),300)}updHome(i)}save()});
+ if(k==='kids'){if(f==='st')m.man=1;if(f==='age'&&!m.man)m.st=prefillSt(m.age);updKid(i)}if(k==='home'){if(f==='addr'){clearTimeout(acT);acT=setTimeout(()=>acSearch(i,m.addr),300)}updHome(i);updLiq(i)}save()});
 document.addEventListener('click',e=>{
  if(e.target.closest('[data-yn="m_f"],[data-yn="c_f"],[data-yn="o_f"],[data-yn="o2_f"],[data-yn="p_f"],[data-yn="k_f"],[data-yn="h_f"]'))setTimeout(()=>{renderLoans();save()},0);
  const ac=e.target.closest('[data-ac]');if(ac){acPick(ac.dataset.ac);return}
  const fv=e.target.closest('[data-fv]');if(fv){fetchValue(+fv.dataset.fv,'',true);return}
  if(!e.target.closest('[id^="ac-"]'))document.querySelectorAll('[id^="ac-"]').forEach(b=>{b.innerHTML='';b.classList.add('hidden')});
- const yk=e.target.closest('[data-yk]');if(yk){const[k,i,f]=yk.dataset.yk.split(':');S[k][+i][f]=+yk.dataset.v;paint();save()}
+ const yk=e.target.closest('[data-yk]');if(yk){const[k,i,f]=yk.dataset.yk.split(':');S[k][+i][f]=+yk.dataset.v;if(k==='home')renderLiq();paint();save()}
  const a=e.target.closest('[data-add]');if(a){const k=a.dataset.add;S[k].push(LOANS[k].mk());renderLoans();save()}
  const d=e.target.closest('[data-del]');if(d){const[k,i]=d.dataset.del.split(':');S[k].splice(+i,1);renderLoans();save()}
 });
@@ -366,6 +394,7 @@ document.addEventListener('click',e=>{
 function validate(){
  if(step===1){if(!S.filing)return 'Please select your IRS filing status.';const a=ageOf(S.dob);if(a===null||a<18||a>90)return 'Please enter your birthday (age 18–90).';if(married()){const b=ageOf(S.dob2);if(b===null||b<18||b>90)return "Please enter your spouse's birthday (age 18–90)."}}
  if(step===5&&S.k_f==='1'&&S.kspend>S.spend)return `Spending toward children (${money(S.kspend)}) cannot exceed your total monthly spending (${money(S.spend)}) on page 3.`;
+ if(step===8&&S.h_f==='1'){const a=ageOf(S.dob)||0;for(let i=0;i<S.home.length;i++){const m=S.home[i];if(m.lq!==1)continue;const nm='Property '+(i+1);if(!(m.ly>=2000&&m.ly<=2200))return `${nm}: enter a four-digit sale year.`;if(liqN(m)<0)return `${nm}: the sale date cannot be in the past.`;if(!(m.val>0))return `${nm}: enter its value on the previous page first.`;if(Math.round(liqN(m)/12)>Math.round(S.plan)-a)return `${nm}: the sale date is after age ${Math.round(S.plan)}. Choose an earlier date or answer No.`}}
  if(step===LAST-2&&S.er_f==='1'){const a=ageOf(S.dob);if(S.er_age>=60)return 'Early retirement means a target age below 60.';if(S.er_age<a)return `Target retirement age must be at least your current age (${a}).`}
  if(step===LAST-1){const a=ageOf(S.dob);if(S.ret<a)return `Retirement age must be at least your current age (${a}).`;if(S.plan<=S.ret)return 'Retirement age must be below 95.';if(S.swr<=0)return 'Withdrawal rate must be above 0.'}
  return '';
@@ -376,7 +405,7 @@ function go(n){
  $('badge').innerHTML=ic(p[3])+` ${n}/${PAGES.length} - ${p[0]}`;$('title').textContent=p[0];$('sub').textContent=p[1];
  $('back').innerHTML=prev?ic('left','w-4 h-4')+' '+prev[0]:'';$('back').style.visibility=prev?'visible':'hidden';
  $('first').style.display=n===1?'none':'flex';$('print').style.display=n===LAST?'flex':'none';$('reset').style.display=n===LAST?'none':'';$('next').style.display=n===LAST?'none':'';$('share').style.display=$('bookmark').style.display=n===LAST?'flex':'none';$('next').className=`px-5 py-2.5 ${n===1?'bg-cyan-500 hover:bg-cyan-400 text-white':'bg-emerald-500 hover:bg-emerald-400 text-slate-950'} font-extrabold rounded-xl text-xs mono transition flex items-center gap-2 cursor-pointer`;
- $('next').innerHTML=(n===LAST?'Recalculate':n===LAST-1?'See Results':'Next: '+nx[0])+' '+ic('right','w-4 h-4');$('err').classList.add('hidden');vis();if(n===LAST)calc();if(n===7)renderLoans();window.scrollTo(0,0);
+ $('next').innerHTML=(n===LAST?'Recalculate':n===LAST-1?'See Results':'Next: '+nx[0])+' '+ic('right','w-4 h-4');$('err').classList.add('hidden');vis();if(n===LAST)calc();if(n===7||n===8)renderLoans();window.scrollTo(0,0);
 }
 function init(skipGo){
  $('logo').innerHTML=ic('flame','w-5 h-5');$('hub').innerHTML=ic('left')+' Suite Hub';$('print').innerHTML=ic('print')+' Print';$('share').innerHTML=ic('share')+' Share';$('bookmark').innerHTML=ic('bookmark')+' Bookmark';$('pages').innerHTML=PAGES.map((p,i)=>`<div id="pg${i+1}" class="hidden space-y-4">${p[2]()}</div>`).join('');
@@ -395,18 +424,18 @@ const othSum=cont=>[['o_f','oth'],['o2_f','oth2']].reduce((t,[f,l],i)=>t+((i===0
 const kidStats=()=>{const k=S.k_f==='1'?S.kids:[];return{n:k.length,cc:k.reduce((s,m)=>s+m.cc,0),cs:k.reduce((s,m)=>s+m.cs,0),sup:k.filter(m=>kidNeed(m)&&m.sup===1).length}};
 const stockNet=()=>S.s_f==='1'?S.s_val-(S.g_f==='1'?S.g_bal:0)+(S.p_f==='1'?S.opt.reduce((t,o)=>t+(o.pos?1:-1)*o.cts*100*o.px,0):0):0;
 function vals(){
- const p=k=>S[k]/100,age=ageOf(S.dob);
+ const p=k=>S[k]/100,age=ageOf(S.dob),sales=saleList(age);
  let start=0;['a','b'].forEach(q=>{if(q==='b'&&!married())return;ACCTS.forEach(([k])=>{if(S[`${q}_${k}`]==='1')start+=S[`${q}_${k}_bal`]})});
  return{cstart:S.cr_f==='1'?S.cr_val:0,rC:1.02/(1+p('inf'))-1,age,ret:Math.round(S.ret),plan:Math.round(S.plan),start:start+stockNet(),contrib:totalSave(),raise:p('raise'),exp:S.exp,tax:Math.min(p('tax'),.9),swr:p('swr'),ss:S.ss,ssAge:S.ssAge,
-  oth:othSum(true),inf:p('inf'),vol:p('vol'),
-  mort:S.m_f==='1'?S.mort.map(m=>({pay:m.pay*12,yrs:myrs(m)})):[],car:S.c_f==='1'?S.car.map(m=>({pay:m.pay*12,yrs:myrs(m)})):[],
+  oth:othSum(true),sales,inf:p('inf'),vol:p('vol'),
+  mort:S.m_f==='1'?S.mort.map((m,j)=>({pay:m.pay*12,yrs:mortEnd(j,myrs(m))})):[],car:S.c_f==='1'?S.car.map(m=>({pay:m.pay*12,yrs:myrs(m)})):[],
   rPre:(1+p('rPre'))/(1+p('inf'))-1,rPost:(1+p('rPost'))/(1+p('inf'))-1};
 }
 const debt=(v,y)=>[...v.mort,...v.car].reduce((s,m)=>s+(y<m.yrs?m.pay:0),0)/Math.pow(1+v.inf,y);
 function run(v,ret,rnd){
  let b=v.start,c=v.cstart;const path=[];
  for(let a=v.age;a<=v.plan;a++){
-  path.push(b+c);const y=a-v.age,mean=a<ret?v.rPre:v.rPost,r=rnd?Math.max(-.9,mean+v.vol*rnd()):mean;
+  (v.sales||[]).forEach(x=>{if(x.y===a-v.age)b+=x.amt});path.push(b+c);const y=a-v.age,mean=a<ret?v.rPre:v.rPost,r=rnd?Math.max(-.9,mean+v.vol*rnd()):mean;
   if(a<ret){b=b*(1+r)+v.contrib*Math.pow(1+v.raise,y);c*=1+v.rC}
   else{const w=Math.max(0,(v.exp+debt(v,y))/(1-v.tax)-(a>=v.ssAge?v.ss:0)-v.oth),t=Math.min(b,w);b=(b-t)*(1+r);c=Math.max(0,c-(w-t))*(1+v.rC)}
  }
@@ -439,7 +468,7 @@ function calc(){
  const i95=95-v.age,w95=i95>=0&&i95<det.length?short(det[i95]):'N/A';
  SHARE=`Retirement & FIRE Planner results\nNest egg at ${v.ret}: ${short(nest)}\nFIRE number: ${short(fire)} (${(nest/fire*100).toFixed(0)}% funded)\nMonte Carlo success: ${(ok/Nn*100).toFixed(0)}%\nEarliest sustainable age: ${early===null?'None':early}\nMoney lasts to: ${dep?'Age '+dep:'Age '+v.plan+'+'}\nNet worth at age 95: ${w95}\nEstimates only, not financial advice.`;
  const coast=fire/Math.pow(1+v.rPre,v.ret-v.age);
- LASTD={age:v.age,ret:v.ret,plan:v.plan,swr:v.swr,nest,need,fire,succ:ok/Nn*100,ok,early,hit,dep,coast,cs:v.start>=coast?1:0,det,p10,p50,p90};
+ LASTD={sale:v.sales.reduce((t,x)=>t+x.amt,0),age:v.age,ret:v.ret,plan:v.plan,swr:v.swr,nest,need,fire,succ:ok/Nn*100,ok,early,hit,dep,coast,cs:v.start>=coast?1:0,det,p10,p50,p90};
  $('res').innerHTML=view(LASTD);
 }
 function view(D){
@@ -448,7 +477,7 @@ function view(D){
  const sc=succ>=85?'text-emerald-400':succ>=70?'text-amber-400':'text-rose-400';
  const card=(l,val,sub,c='text-white',k='')=>`<div class="glass-card rounded-xl p-3"><p class="flex items-center gap-1 text-[10px] mono text-slate-400">${l}${info(k)}</p><p class="text-lg font-extrabold mono ${c}">${val}</p><p class="text-[10px] text-slate-500 leading-snug">${sub}</p></div>`;
  const hi=(l,val,sub,c)=>`<div class="col-span-2 lg:col-span-4 rounded-xl p-4 border-2 border-cyan-400/70 bg-gradient-to-r from-cyan-950/80 to-indigo-950/80 shadow-lg shadow-cyan-500/20"><p class="flex items-center gap-1 text-xs mono font-bold uppercase tracking-wider text-cyan-200">${l}${info('at95')}</p><p class="text-3xl sm:text-4xl font-extrabold mono ${c}">${val}</p><p class="text-[11px] text-slate-300 leading-snug">${sub}</p></div>`;
- const atAge=A=>{const i=A-D.age,l='Net worth at age '+A;if(i<0||i>=det.length)return hi(l,'N/A',i<0?'You are already past this age':'Beyond plan horizon','text-white');const d=det[i];return hi(l,short(d),`Today's dollars, steady returns, investments only (home equity not counted). Median simulation: ${short(p50[i])}.`,d>0?'text-sky-300':'text-rose-400')};
+ const atAge=A=>{const i=A-D.age,l='Net worth at age '+A;if(i<0||i>=det.length)return hi(l,'N/A',i<0?'You are already past this age':'Beyond plan horizon','text-white');const d=det[i];return hi(l,short(d),`Today's dollars, steady returns, investments only (home equity counted only if sold). Median simulation: ${short(p50[i])}.`,d>0?'text-sky-300':'text-rose-400')};
  return `<div class="grid grid-cols-2 lg:grid-cols-4 gap-3">`+
   card('Nest egg at '+D.ret,short(nest),"today's dollars, steady returns",'text-sky-300','nest')+
   card('FIRE number',short(fire),`${money(need)}/yr incl. debts ÷ ${(D.swr*100).toFixed(1)}%`,'text-amber-300','fire')+
@@ -459,9 +488,9 @@ function view(D){
   card('Coast FIRE number today',short(coast),D.cs?'You have already coasted':'Stop saving once you hit this',D.cs?'text-emerald-400':'text-white','coast')+
   card('Money lasts to',dep?'Age '+dep:'Age '+D.plan+'+',dep?'steady-return depletion':'no depletion',dep?'text-rose-400':'text-emerald-400','lasts')+
   atAge(95)+
- `</div><div class="text-sm text-slate-200 glass-card rounded-xl p-3">`+(succ>=85?`<span class="text-emerald-400 font-bold">Looks resilient</span>: ${succ.toFixed(0)}% of simulations last to ${D.plan}.`:succ>=70?`<span class="text-amber-400 font-bold">Borderline</span>: ${succ.toFixed(0)}% success. Consider saving more, spending less, or retiring later.`:`<span class="text-rose-400 font-bold">At risk</span>: ${succ.toFixed(0)}% success. Try a later retirement age${early?` (steady returns support ${early})`:''}, lower spending, or higher savings.`)+`</div>
+ `</div><div class="text-sm text-slate-200 glass-card rounded-xl p-3">`+(succ>=85?`<span class="text-emerald-400 font-bold">Looks resilient</span>: ${succ.toFixed(0)}% of simulations last to ${D.plan}.`:succ>=70?`<span class="text-amber-400 font-bold">Borderline</span>: ${succ.toFixed(0)}% success. Consider saving more, spending less, or retiring later.`:`<span class="text-rose-400 font-bold">At risk</span>: ${succ.toFixed(0)}% success. Try a later retirement age${early?` (steady returns support ${early})`:''}, lower spending, or higher savings.`)+`</div>`+(D.sale>0?`<div class="text-xs text-slate-300 glass-card rounded-xl p-3">Includes about <b class="text-emerald-400">${short(D.sale)}</b> in net property sale proceeds (today's dollars), added to your portfolio in the year of each planned sale.</div>`:'')+`
  <div class="glass-card rounded-xl p-3"><div class="flex flex-wrap gap-x-4 gap-y-1 text-[10px] mono text-slate-400 mb-2"><span><i class="inline-block w-3 h-0.5 bg-sky-400 align-middle"></i> Median</span><span><i class="inline-block w-3 h-2 bg-sky-400/20 align-middle"></i> 10th–90th pct</span><span><i class="inline-block w-3 h-0.5 bg-indigo-300 align-middle"></i> Steady path</span><span><i class="inline-block w-3 h-0.5 bg-amber-400 align-middle"></i> FIRE number</span></div>${chart(v,ages,p10,p50,p90,det,fire)}</div>
- <p class="text-[10px] text-slate-500 leading-snug">Educational model, not financial advice. Mortgage and car payments are fixed in nominal dollars (their real cost falls with inflation) and drop out when paid off. HSA balances count toward your portfolio. Social Security timing follows your age. Taxes are a flat effective rate. Stocks count net of any margin loan, and options at current market value (short positions as a liability); margin interest and option expirations are not modeled. Children's costs are collected for reference and do not change the projections. Home equity is shown for reference and is not counted in your portfolio. Returns are fixed at 10% before and 5% in retirement (crypto 2%), inflation at 3%, and retirement spending follows your lifestyle choice.</p>`;
+ <p class="text-[10px] text-slate-500 leading-snug">Educational model, not financial advice. Mortgage and car payments are fixed in nominal dollars (their real cost falls with inflation) and drop out when paid off. HSA balances count toward your portfolio. Social Security timing follows your age. Taxes are a flat effective rate. Stocks count net of any margin loan, and options at current market value (short positions as a liability); margin interest and option expirations are not modeled. Children's costs are collected for reference and do not change the projections. Home equity is not counted in your portfolio unless you plan to sell a property on page 8: its value grows 3% a year, the mortgage payoff is subtracted, and the net proceeds (no selling costs or taxes) are added in the year of sale, while that mortgage's payments stop. Returns are fixed at 10% before and 5% in retirement (crypto 2%), inflation at 3%, and retirement spending follows your lifestyle choice.</p>`;
 }
 const b64=u=>{let t='';for(let i=0;i<u.length;i++)t+=String.fromCharCode(u[i]);return btoa(t).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')};
 const ub64=t=>{t=t.replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';const r=atob(t),u=new Uint8Array(r.length);for(let i=0;i<r.length;i++)u[i]=r.charCodeAt(i);return u};
