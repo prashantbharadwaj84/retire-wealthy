@@ -534,15 +534,18 @@ function makeImage(D,name){
  x.fillStyle='#5b8aff';x.font='800 20px '+F;x.textAlign='right';x.fillText('Wanna see yours?',W-48,606);
  return c;
 }
-const kk=a=>a.map(n=>Math.round(n/1000));
-const snap=(D,n)=>({n,age:D.age,ret:D.ret,plan:D.plan,swr:+D.swr.toFixed(4),nest:Math.round(D.nest),need:Math.round(D.need),fire:Math.round(D.fire),succ:+D.succ.toFixed(2),ok:D.ok,early:D.early,hit:D.hit,dep:D.dep,coast:Math.round(D.coast),cs:D.cs,det:kk(D.det),p10:kk(D.p10),p50:kk(D.p50),p90:kk(D.p90)});
+const kidx=(len,st,ri)=>{const q=new Set();for(let i=0;i<len;i+=st)q.add(i);q.add(len-1);if(ri>=0&&ri<len)q.add(ri);return[...q].sort((a,b)=>a-b)};
+const kk=(a,ix)=>ix.map(i=>Math.round(a[i]/1000));
+const snap=(D,n,st=1)=>{const ix=kidx(D.det.length,st,D.ret-D.age);return{st,n,age:D.age,ret:D.ret,plan:D.plan,swr:+D.swr.toFixed(4),nest:Math.round(D.nest),need:Math.round(D.need),fire:Math.round(D.fire),succ:+D.succ.toFixed(2),ok:D.ok,early:D.early,hit:D.hit,dep:D.dep,coast:Math.round(D.coast),cs:D.cs,det:kk(D.det,ix),p10:kk(D.p10,ix),p50:kk(D.p50,ix),p90:kk(D.p90,ix)}};
 function parseSnap(o){
  const n=t=>{t=+t;if(!isFinite(t))throw 0;return t},nu=t=>t===null||t===undefined?null:n(t),ar=t=>{if(!Array.isArray(t))throw 0;return t.slice(0,150).map(q=>n(q)*1000)};
- const D={age:n(o.age),ret:n(o.ret),plan:n(o.plan),swr:n(o.swr),nest:n(o.nest),need:n(o.need),fire:n(o.fire),succ:n(o.succ),ok:n(o.ok),early:nu(o.early),hit:nu(o.hit),dep:nu(o.dep),coast:n(o.coast),cs:o.cs?1:0,det:ar(o.det),p10:ar(o.p10),p50:ar(o.p50),p90:ar(o.p90)},len=D.plan-D.age+1;
- if(!(D.age>=0&&D.plan>D.age&&D.plan<=150&&D.ret>=D.age&&D.ret<=D.plan&&D.swr>0&&D.fire>0&&D.succ>=0&&D.succ<=100&&[D.det,D.p10,D.p50,D.p90].every(a=>a.length===len)))throw 0;
+ const D={age:n(o.age),ret:n(o.ret),plan:n(o.plan),swr:n(o.swr),nest:n(o.nest),need:n(o.need),fire:n(o.fire),succ:n(o.succ),ok:n(o.ok),early:nu(o.early),hit:nu(o.hit),dep:nu(o.dep),coast:n(o.coast),cs:o.cs?1:0,det:ar(o.det),p10:ar(o.p10),p50:ar(o.p50),p90:ar(o.p90)},len=D.plan-D.age+1,st=o.st===undefined?1:n(o.st);
+ if(!(Number.isInteger(st)&&st>=1&&st<=24&&D.age>=0&&D.plan>D.age&&D.plan<=150&&D.ret>=D.age&&D.ret<=D.plan&&D.swr>0&&D.fire>0&&D.succ>=0&&D.succ<=100))throw 0;
+ const ix=kidx(len,st,D.ret-D.age);if(![D.det,D.p10,D.p50,D.p90].every(a=>a.length===ix.length))throw 0;
+ if(st>1)['det','p10','p50','p90'].forEach(k=>{const a=D[k],f=new Array(len);for(let j=0;j<ix.length-1;j++){const i0=ix[j],i1=ix[j+1];for(let i=i0;i<=i1;i++)f[i]=a[j]+(a[j+1]-a[j])*(i-i0)/(i1-i0)}D[k]=f});
  return{D,name:cleanName(o.n)};
 }
-async function resultsLink(name){return location.href.split('#')[0]+'#r='+await enc(snap(LASTD,name))}
+async function resultsLink(name){const base=location.href.split('#')[0]+'#r=';let u='';for(const st of [2,3,4,6,8,12]){u=base+await enc(snap(LASTD,name,st));if(u.length<=base.length+680)break}return u}
 
 const isMobile=()=>/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 function dlImg(){
